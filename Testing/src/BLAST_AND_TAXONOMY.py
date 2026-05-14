@@ -27,11 +27,14 @@ def main():
     print("CL: BLAST search and taxonomy starting")
     start_time = time.perf_counter()
     ################### Arguments initialisation ##############################
-    s_input_file = "./Output/BLAST/" + sys.argv[1]
+    s_input_file = sys.argv[1]
     i_mode = int(sys.argv[2])
     f_e_value_threshold = float(sys.argv[3])
     if (f_e_value_threshold == None):
         f_e_value_threshold = 0.001
+    cleanup_directory_extension = sys.argv[5]
+    final_directory_extension = sys.argv[6]
+    blast_directory_extension = sys.argv[7]
     ######################### Starting values #################################
     counter = 0
     i_name_start = 0
@@ -47,10 +50,10 @@ def main():
     i_name_end = s_input_file.find("_", i_name_start)
     if ((i_name_start != -1) and (i_name_end != -1)):
         s_file_identifier = s_input_file[i_name_start:i_name_end]
-        s_blast_complete = "./Output/BLAST/INT26_" + s_file_identifier + "_BLAST_COMPLETE.xml"
-        s_blast_summary = "./Output/Final/INT26_" + s_file_identifier + "_BLAST_SUMMARY.txt"
-        s_taxonomy_counter = "./Output/Final/INT26_" + s_file_identifier + "_TAXONOMY_COUNTER.xml"
-        s_performance_report = "./Output/Final/INT26_" + s_file_identifier + "_PERFORMANCE_REPORT.txt"
+        s_blast_complete = blast_directory_extension + "/INT26_" + s_file_identifier + "_BLAST_COMPLETE.xml"
+        s_blast_summary = final_directory_extension + "/INT26_" + s_file_identifier + "_BLAST_SUMMARY.txt"
+        s_taxonomy_counter = final_directory_extension + "/INT26_" + s_file_identifier + "_TAXONOMY_COUNTER.xml"
+        s_performance_report = final_directory_extension + "/INT26_" + s_file_identifier + "_PERFORMANCE_REPORT.txt"
     else: 
         sys.stderr.write("Error: Invalid starting file argument. Does not follow structure of INT26_{}_CONSENSUS.fas\n")
         sys.exit()

@@ -17,10 +17,13 @@ def main():
     print("CL: Trimming and consensus starting.")
     start_time = time.perf_counter()
     ############################ Arguments #####################################
-    s_forward_file = "./Input/" + sys.argv[1]
-    s_reverse_file = "./Input/" + sys.argv[2]
+    s_forward_file = sys.argv[1]
+    s_reverse_file = sys.argv[2]
     window_size = int(sys.argv[3])            #between 5 - 10: good for short reads, 10-20 smoother, more conservative
     quality_threshold = int(sys.argv[4])      #Could go up to 30 for stricter trimming; 20 standard
+    cleanup_directory_extension = sys.argv[5]
+    final_directory_extension = sys.argv[6]
+    blast_directory_extension = sys.argv[7]
     #################### Establish how files will be named #####################
     i_name_start = s_forward_file.find("_") + 1
     i_name_end = s_forward_file.find("_", i_name_start)
@@ -29,15 +32,16 @@ def main():
         s_sample_name = s_forward_file[i_name_start:i_name_end]
         s_forward_primer_name = s_forward_file[i_name_end + 1: i_primer_end]
         s_reverse_primer_name = s_reverse_file[i_name_end + 1: i_primer_end]
-        s_forward_trim_output_fastq = "./Output/Cleanup/INT26_" + s_sample_name + "_" + s_forward_primer_name + "_TRIM.fastq"
-        s_reverse_trim_output_fastq = "./Output/Cleanup/INT26_" + s_sample_name + "_" + s_reverse_primer_name + "_TRIM.fastq"
-        s_forward_trim_output_fasta = "./Output/Cleanup/INT26_" + s_sample_name + "_" + s_forward_primer_name + "_TRIM.fasta"
-        s_reverse_trim_output_fasta = "./Output/Cleanup/INT26_" + s_sample_name + "_" + s_reverse_primer_name + "_TRIM.fasta"
-        s_reverse_complement_output_file_fasta = "./Output/Cleanup/INT26_" + s_sample_name + "_" + s_reverse_primer_name + "_RC.fas"
-        s_reverse_complement_output_file_fastq = "./Output/Cleanup/INT26_" + s_sample_name + "_" + s_reverse_primer_name + "_RC.fastq"
-        s_alignment_output_file = "./Output/Cleanup/INT26_" + s_sample_name + "_ALIGNMENT.aln"
-        s_consensus_file = "./Output/BLAST/INT26_" + s_sample_name + "_CONSENSUS.fas"
-        s_performance_report = "./Output/Final/INT26_" + s_sample_name + "_PERFORMANCE_REPORT.txt"
+        s_forward_trim_output_fastq = cleanup_directory_extension + "/INT26_" + s_sample_name + "_" + s_forward_primer_name + "_TRIM.fastq"
+        s_reverse_trim_output_fastq = cleanup_directory_extension + "/INT26_" + s_sample_name + "_" + s_reverse_primer_name + "_TRIM.fastq"
+        s_forward_trim_output_fasta = cleanup_directory_extension + "/INT26_" + s_sample_name + "_" + s_forward_primer_name + "_TRIM.fasta"
+        s_reverse_trim_output_fasta = cleanup_directory_extension + "/INT26_" + s_sample_name + "_" + s_reverse_primer_name + "_TRIM.fasta"
+        s_combined_file = cleanup_directory_extension + "/INT26_" + s_sample_name + "_COMBINED.fas"
+        s_reverse_complement_output_file_fasta = cleanup_directory_extension + "/INT26_" + s_sample_name + "_" + s_reverse_primer_name + "_RC.fas"
+        s_reverse_complement_output_file_fastq = cleanup_directory_extension + "/INT26_" + s_sample_name + "_" + s_reverse_primer_name + "_RC.fastq"
+        s_alignment_output_file = cleanup_directory_extension + "/INT26_" + s_sample_name + "_ALIGNMENT.aln"
+        s_consensus_file = blast_directory_extension + "/INT26_" + s_sample_name + "_CONSENSUS.fas"
+        s_performance_report = final_directory_extension + "/INT26_" + s_sample_name + "_PERFORMANCE_REPORT.txt"
     else: 
         sys.stderr.write("Error: Invalid starting file argument. Does not follow structure of INT26_{}_ALIGNMENT.aln")
         sys.exit()    
@@ -55,7 +59,7 @@ def main():
     records_dict = {s_sample_name + "_" + s_forward_primer_name + "__": s_forward_trim_output_fastq, s_sample_name + "_" + s_reverse_primer_name + "___RC": s_reverse_complement_output_file_fastq}
     print("CL: Reverse complement completed.")
     ####################### Make alignment using CrustalO ######################
-    REVERSE_COMPLEMENT_AND_ALIGNMENT.align_sequences(s_sample_name, s_forward_trim_output_fasta, s_reverse_complement_output_file_fasta, s_alignment_output_file)
+    REVERSE_COMPLEMENT_AND_ALIGNMENT.align_sequences(s_sample_name, s_forward_trim_output_fasta, s_reverse_complement_output_file_fasta, s_alignment_output_file, s_combined_file)
     print("CL: Alignment completed.")
     ########################### Make consensus sequence ########################
     alignment_record = AlignIO.read(s_alignment_output_file, "fasta")

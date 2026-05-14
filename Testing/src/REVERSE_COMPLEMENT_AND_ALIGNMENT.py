@@ -77,19 +77,19 @@ def get_reverse_complement_fastq(s_reverse_primer_input_file, s_reverse_compleme
             SeqIO.write(record, output, "fastq")
 
 
-def align_sequences(s_sample_name, s_forward_primer_input_file, s_reverse_complement_output_file, s_alignment_output_file):
+def align_sequences(s_sample_name, s_forward_primer_input_file, s_reverse_complement_output_file, s_alignment_output_file, s_combined_file):
     """
         Take forward primer sequence, reverse complement of reverse primer sequence and align using the ClustalW
         algorithm. The algorithm is then saved in the s_alignment_output_file.
     """
     input_files = [s_forward_primer_input_file, s_reverse_complement_output_file]  #glob.glob("../Input/*.seq")
-    combined_file = "./Output/Cleanup/INT26_" + s_sample_name + "_COMBINED.fas"
-    with open(combined_file, "w") as combined:
+    #combined_file = "./Output/Cleanup/INT26_" + s_sample_name + "_COMBINED.fas"
+    with open(s_combined_file, "w") as combined:
         for infile in input_files:
             with open(infile) as f:
                 combined.write(f.read().strip() + "\n")
 
-    cmd = ["clustalo", "-i", combined_file, "-o", s_alignment_output_file, "--force", "--outfmt=fa"]
+    cmd = ["clustalo", "-i", s_combined_file, "-o", s_alignment_output_file, "--force", "--outfmt=fa"]
 
     try:
         subprocess.run(cmd, check = True) #capture_output = True, text = True)

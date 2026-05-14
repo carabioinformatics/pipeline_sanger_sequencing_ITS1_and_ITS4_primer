@@ -32,9 +32,9 @@ def main():
     f_e_value_threshold = float(sys.argv[3])
     if (f_e_value_threshold == None):
         f_e_value_threshold = 0.001
-    cleanup_directory_extension = sys.argv[5]
-    final_directory_extension = sys.argv[6]
-    blast_directory_extension = sys.argv[7]
+    cleanup_directory_extension = sys.argv[4]
+    final_directory_extension = sys.argv[5]
+    blast_directory_extension = sys.argv[6]
     ######################### Starting values #################################
     counter = 0
     i_name_start = 0

@@ -6,7 +6,7 @@ mkdir -p Output
 #taxonomy_mode = $3
 #e_value_threshold = $4
 
-for forward in Input/*ITS1___1.ab1
+for forward in ./Input/*ITS1___1.ab1
 do
     # Extract sample name
     sample_name=$(basename "$forward" | cut -d'_' -f2)

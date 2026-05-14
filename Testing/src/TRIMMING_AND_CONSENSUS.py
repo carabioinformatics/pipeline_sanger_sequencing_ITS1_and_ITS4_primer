@@ -34,8 +34,8 @@ def main():
         s_reverse_primer_name = s_reverse_file[i_name_end + 1: i_primer_end]
         s_forward_trim_output_fastq = cleanup_directory_extension + "/INT26_" + s_sample_name + "_" + s_forward_primer_name + "_TRIM.fastq"
         s_reverse_trim_output_fastq = cleanup_directory_extension + "/INT26_" + s_sample_name + "_" + s_reverse_primer_name + "_TRIM.fastq"
-        s_forward_trim_output_fasta = cleanup_directory_extension + "/INT26_" + s_sample_name + "_" + s_forward_primer_name + "_TRIM.fasta"
-        s_reverse_trim_output_fasta = cleanup_directory_extension + "/INT26_" + s_sample_name + "_" + s_reverse_primer_name + "_TRIM.fasta"
+        s_forward_trim_output_fasta = cleanup_directory_extension + "/INT26_" + s_sample_name + "_" + s_forward_primer_name + "_TRIM.fas"
+        s_reverse_trim_output_fasta = cleanup_directory_extension + "/INT26_" + s_sample_name + "_" + s_reverse_primer_name + "_TRIM.fas"
         s_combined_file = cleanup_directory_extension + "/INT26_" + s_sample_name + "_COMBINED.fas"
         s_reverse_complement_output_file_fasta = cleanup_directory_extension + "/INT26_" + s_sample_name + "_" + s_reverse_primer_name + "_RC.fas"
         s_reverse_complement_output_file_fastq = cleanup_directory_extension + "/INT26_" + s_sample_name + "_" + s_reverse_primer_name + "_RC.fastq"

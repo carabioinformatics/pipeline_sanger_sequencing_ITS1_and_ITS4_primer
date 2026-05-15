@@ -8,7 +8,31 @@ Process Sanger sequence data of the ITS region from fungal samples to identify w
 Sample preparation and processing: 
 Samples were collected from different Ostrich farms and egg incubation rooms and were then cultured so that fungal species could grow. The samples underwent DNA extraction and then a PCR reaction using ITS1 (forward) and ITS4 (reverse) primers to confirm that fungal DNA can be found in the sample. If there was positive amplification, the PCR reaction is repeated. The PCR product of about 600 bp is purified and then sent to CAF Stellenbosch Campus for Sanger sequencing. 
 
-################ How to run #################
+############# Directory structure ############
+pipeline_sanger_sequencing_ITS1_and_ITS4_primer/
+|
+Testing/
+|
+|-- run.sh
+|-- README.md
+|-- .gitignore
+|-- src
+|   |-- BLAST_AND_TAXONOMY.py
+|   |-- REVERSE_COMPLEMENT_AND_ALIGNMENT.py
+|   |-- TRIMMING_AND_CONSENSUS.py
+|-- Input (needs to be created by user)
+|   |-- *.ab1 files (forward and reverse files)
+|-- Output (gets created by run.sh file)
+|   |-- Sample1 (created by run.sh for each sample)
+|       |-- BLAST
+|       |-- Cleanup
+|       |-- Final
+|   |-- Sample2 (created by run.sh for each sample)
+|       |-- BLAST
+|       |-- Cleanup
+|       |-- Final
+
+################ How to run ##################
 - In root directory
 - ./run.sh window_size quality_threshold_for_trimming taxonomy_mode e_value_threshold
 - What I usually use: ./run.sh 5 20 0 0.001

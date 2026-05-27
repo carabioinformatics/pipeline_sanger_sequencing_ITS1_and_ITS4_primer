@@ -1,8 +1,9 @@
 import sys
 import time
 from datetime import datetime
-import socket
-from Bio.Blast import NCBIWWW
+#from Bio.Blast import NCBIWWW
+#from Bio.Blast.Applications import NcbiblastnCommandline
+import subprocess
 from Bio import SeqIO
 from Bio.Blast import NCBIXML
 from Bio import Entrez
@@ -32,7 +33,6 @@ def main():
     f_e_value_threshold = float(sys.argv[3])
     if (f_e_value_threshold == None):
         f_e_value_threshold = 0.001
-    cleanup_directory_extension = sys.argv[4]
     final_directory_extension = sys.argv[5]
     blast_directory_extension = sys.argv[6]
     ######################### Starting values #################################
@@ -61,7 +61,21 @@ def main():
         #     std_error.write("Invalid starting file argument. Does not follow structure of INT26_{}_CONSENSUS.fas")
         # std_error.close()
     ################### Start a BLASTn search using input file ##################
-    record = SeqIO.read(s_input_file, format="fasta")
+    command = ["blastn", "-query", s_input_file, "-db", "nt", "-out", s_blast_complete, "-evalue", str(f_e_value_threshold)]
+    #record = SeqIO.read(s_input_file, format="fasta")
+    #blastn_cline = NcbiblastnCommandline(
+    #    query = s_input_file, 
+    #    db = "nt",
+    #    out = s_blast_complete,
+    #    evalue = f_e_value_threshold
+        #max_target_seqs = 10,
+        #perc_identity = 95,
+        #word_size = 11,
+        #outfmt = 5
+    #)
+    #stdout, stderr = blastn_cline()
+    subprocess.run(command)
+    """record = SeqIO.read(s_input_file, format="fasta")
     try:
         result_handle = NCBIWWW.qblast("blastn", "nt", record.seq)
     except URLError as e:
@@ -70,13 +84,13 @@ def main():
     except Exception as e:
         sys.stderr.write(f"Error: {e}")
         sys.exit()
-
+    """
     print("CL: BLASTn search complete.")
     ############## Write complete BLASTn report to output file ##################
-    with open(s_blast_complete, "w") as out_handle:
-        out_handle.write(result_handle.read())
-    result_handle.close()
-    print("CL: Writing of complete BLASTn report done.")
+    #with open(s_blast_complete, "w") as out_handle:
+    #   out_handle.write(result_handle.read())
+    #result_handle.close()
+    #print("CL: Writing of complete BLASTn report done.")
     ############ Make summary of BLASTn report using recent output file #########
     with open(s_blast_summary, "w") as summary_out:
         with open(s_blast_complete) as result_handle:

@@ -52,3 +52,4 @@ Testing/
 - Biopython (pip install biopython)
 - Miniconda (https://www.anaconda.com/docs/getting-started/miniconda/install/windows-gui-install)
 - ClustalO ()
+- BLAST install: (conda install -c bioconda blast)

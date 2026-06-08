@@ -1,5 +1,5 @@
 #!/bin/bash
-
+rm -r Output
 mkdir -p Output
 #window_size = $1
 #quality_threshold = $2

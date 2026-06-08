@@ -1,4 +1,5 @@
 import sys
+import os
 import time
 from datetime import datetime
 #from Bio.Blast import NCBIWWW
@@ -12,10 +13,7 @@ Entrez.email = "26869993@sun.ac.za"
 
 ############################ TODO ################################
 #TODO Direct stderr to seperate file, not just terminal
-#TODO Make .sp more general
-#TODO Direct output to ./out directory
 #TODO More info in performance report?
-#TODO Make sure performance file doesn't completely wipe previous
 
 def main():
     """
@@ -61,7 +59,10 @@ def main():
         #     std_error.write("Invalid starting file argument. Does not follow structure of INT26_{}_CONSENSUS.fas")
         # std_error.close()
     ################### Start a BLASTn search using input file ##################
-    command = ["blastn", "-query", s_input_file, "-db", "nt", "-out", s_blast_complete, "-evalue", str(f_e_value_threshold)]
+    command = ["blastn", "-query", s_input_file, "-db", "nt","-out", s_blast_complete, "-outfmt", "5", "-evalue", str(f_e_value_threshold)]
+    #print(os.path.exists(s_input_file))
+    #print(os.path.exists(s_blast_complete))
+    #print(f_e_value_threshold)
     #record = SeqIO.read(s_input_file, format="fasta")
     #blastn_cline = NcbiblastnCommandline(
     #    query = s_input_file, 
@@ -74,7 +75,10 @@ def main():
         #outfmt = 5
     #)
     #stdout, stderr = blastn_cline()
-    subprocess.run(command)
+    #print("".join(command))
+    blast_result = subprocess.run(command, capture_output=True, text=True)
+    print("STDOUT: "+ blast_result.stdout)
+    print("STDERR: " + blast_result.stderr)
     """record = SeqIO.read(s_input_file, format="fasta")
     try:
         result_handle = NCBIWWW.qblast("blastn", "nt", record.seq)

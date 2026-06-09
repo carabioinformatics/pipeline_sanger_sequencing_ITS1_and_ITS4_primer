@@ -9,11 +9,12 @@ Sample preparation and processing:
 Samples were collected from different Ostrich farms and egg incubation rooms and were then cultured so that fungal species could grow. The samples underwent DNA extraction and then a PCR reaction using ITS1 (forward) and ITS4 (reverse) primers to confirm that fungal DNA can be found in the sample. If there was positive amplification, the PCR reaction is repeated. The PCR product of about 600 bp is purified and then sent to CAF Stellenbosch Campus for Sanger sequencing. 
 
 ############# Directory structure ############
-pipeline_sanger_sequencing_ITS1_and_ITS4_primer/
+~/pipeline_sanger_sequencing_ITS1_and_ITS4_primer/
 |
 Testing/
 |
 |-- run.sh
+|-- build_database.sh
 |-- README.md
 |-- .gitignore
 |-- src
@@ -52,3 +53,27 @@ Testing/
 - Biopython (pip install biopython)
 - Miniconda (https://www.anaconda.com/docs/getting-started/miniconda/install/windows-gui-install)
 - ClustalO ()
+- UNITE2024ITS.fasta file fingerprint: md5:a2deecb84d0f322a7cde137a1c8c67f3
+For updating UNITE database: 
+(Replaces all old database files with updated ones. Code can run normally again)
+    - Download the new FASTA
+    - Run this in the bash file:
+    makeblastdb \
+        -in new_unite_release.fasta \
+        -dbtype nucl \
+        -out unite_its
+
+############### Database structure #################
+- In terminal, outside conda, execute
+    mkdir -p ~/databases/unite
+    cd ~/databases/unite
+    Download the UNITE FASTA file into this directory
+    Run ./build_databash.sh script only at the start to build database
+- Structure after building
+~/databases/unite/
+|
+|-- unite2024ITS.fasta
+|-- unite_its.nhr
+|-- unite_its.nin
+|-- unite_its.nsq
+|-- ...

@@ -12,9 +12,6 @@ Entrez.email = "26869993@sun.ac.za"
 ############################ TODO ################################
 #TODO Direct stderr to seperate file, not just terminal
 #TODO Make .sp more general
-#TODO Direct output to ./out directory
-#TODO More info in performance report?
-#TODO Make sure performance file doesn't completely wipe previous
 
 def main():
     """

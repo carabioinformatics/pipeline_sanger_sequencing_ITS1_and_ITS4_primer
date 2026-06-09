@@ -1,5 +1,7 @@
 #!/bin/bash
 
+echo "Start main run script"
+
 mkdir -p Output
 #window_size = $1
 #quality_threshold = $2
@@ -47,3 +49,4 @@ do
 done
 
 echo "Pipeline finished"
+echo "End main run script"

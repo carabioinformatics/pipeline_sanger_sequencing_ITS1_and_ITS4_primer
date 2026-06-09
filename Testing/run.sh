@@ -1,6 +1,7 @@
 #!/bin/bash
 
 echo "Start main run script"
+#./build_database.sh
 
 mkdir -p Output
 #window_size = $1
@@ -41,6 +42,7 @@ do
 
     # Run scrips now
     python3 ./src/TRIMMING_AND_CONSENSUS.py $forward $reverse $1 $2 $cleanup_attachment $final_attachment $blast_attachment
+    #blastn -query $1 -db ./database/unite/unite_its_database -out $2 -outfmt 5
     python3 ./src/BLAST_AND_TAXONOMY.py ./Output/$sample_name/BLAST/$consensus_name $3 $4 $cleanup_attachment $final_attachment $blast_attachment
 
     # Ending

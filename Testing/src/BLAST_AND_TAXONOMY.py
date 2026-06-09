@@ -59,7 +59,7 @@ def main():
         #     std_error.write("Invalid starting file argument. Does not follow structure of INT26_{}_CONSENSUS.fas")
         # std_error.close()
     ################### Start a BLASTn search using input file ##################
-    UNITE_database = "~/c/c/databases/unite/unite_its_database"
+    UNITE_database = "./database/unite/unite_its_database"
     command = ["blastn", "-query", s_input_file, "-db", UNITE_database, "-out", s_blast_complete, "-outfmt", "5", "-evalue", str(f_e_value_threshold), "-max_target_seqs", "10"]
     
     blast_result = subprocess.run(command, capture_output=True, text=True)

@@ -35,8 +35,11 @@ Testing/
 
 ################ How to run ##################
 - In root directory
-- ./run.sh window_size quality_threshold_for_trimming taxonomy_mode e_value_threshold
-- What I usually use: ./run.sh 5 20 0 0.001
+- If running for the first time
+    ./build_database.sh
+- For every time: 
+    ./run.sh window_size quality_threshold_for_trimming taxonomy_mode e_value_threshold
+    What I usually use: ./run.sh 5 20 0 0.001
 - What each parameter means
     Window size:
         This is used when trimming the raw sequences. The raw sequences is split into windows with this size. The average phred score of this window is taken. This this average score is not good, then this region is considered for trimming. This is more accurate than looking at individual nucleotide phred scores.

@@ -61,7 +61,7 @@ For updating UNITE database:
     makeblastdb \
         -in new_unite_release.fasta \
         -dbtype nucl \
-        -out unite_its
+        -out unite_its_database
 
 ############### Database structure #################
 - In terminal, outside conda, execute

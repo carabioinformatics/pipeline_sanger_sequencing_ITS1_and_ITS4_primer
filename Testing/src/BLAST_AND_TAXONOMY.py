@@ -2,6 +2,7 @@ import sys
 import time
 from datetime import datetime
 import socket
+import subprocess
 from Bio.Blast import NCBIWWW
 from Bio import SeqIO
 from Bio.Blast import NCBIXML
@@ -58,7 +59,13 @@ def main():
         #     std_error.write("Invalid starting file argument. Does not follow structure of INT26_{}_CONSENSUS.fas")
         # std_error.close()
     ################### Start a BLASTn search using input file ##################
-    record = SeqIO.read(s_input_file, format="fasta")
+    UNITE_database = "~/c/c/databases/unite/unite_its_database"
+    command = ["blastn", "-query", s_input_file, "-db", UNITE_database, "-out", s_blast_complete, "-outfmt", "5", "-evalue", str(f_e_value_threshold), "-max_target_seqs", "10"]
+    
+    blast_result = subprocess.run(command, capture_output=True, text=True)
+    print("return code: " + str(blast_result.returncode))
+    print("STDERR: " + blast_result.stderr)
+    """record = SeqIO.read(s_input_file, format="fasta")
     try:
         result_handle = NCBIWWW.qblast("blastn", "nt", record.seq)
     except URLError as e:
@@ -67,13 +74,14 @@ def main():
     except Exception as e:
         sys.stderr.write(f"Error: {e}")
         sys.exit()
-
+    """
     print("CL: BLASTn search complete.")
     ############## Write complete BLASTn report to output file ##################
-    with open(s_blast_complete, "w") as out_handle:
+    """with open(s_blast_complete, "w") as out_handle:
         out_handle.write(result_handle.read())
     result_handle.close()
     print("CL: Writing of complete BLASTn report done.")
+    """
     ############ Make summary of BLASTn report using recent output file #########
     with open(s_blast_summary, "w") as summary_out:
         with open(s_blast_complete) as result_handle:

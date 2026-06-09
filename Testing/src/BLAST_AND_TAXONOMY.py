@@ -12,8 +12,10 @@ from urllib.error import URLError
 Entrez.email = "26869993@sun.ac.za"
 
 ############################ TODO ################################
-#TODO Direct stderr to seperate file, not just terminal
 #TODO More info in performance report?
+#TODO Doesn't work because attempting to run locally. Needs to download nt dowload locally, but very large. 
+# Suggests using RefSeq, but will need to investigate more. Rather going back to main branch. Will filter 
+# results manually.
 
 def main():
     """

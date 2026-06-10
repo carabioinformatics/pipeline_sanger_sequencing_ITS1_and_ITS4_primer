@@ -1,7 +1,6 @@
 import sys
 import time
 from datetime import datetime
-import socket
 import subprocess
 from Bio.Blast import NCBIWWW
 from Bio import SeqIO
@@ -69,7 +68,7 @@ def main():
         # std_error.close()
     ################### Perform BLAST on different databases ##################
     ncbi_start_time = time.perf_counter()
-    ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_counter_ncbi, f_e_value_threshold, i_mode)
+    #ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_counter_ncbi, f_e_value_threshold, i_mode)
     ncbi_end_time = time.perf_counter()
     unite_start_time = time.perf_counter()
     unite(s_input_file, s_blast_summary_unite, s_blast_complete_unite, s_taxonomy_counter_unite, f_e_value_threshold, i_mode)
@@ -91,6 +90,10 @@ def main():
     print("CL: BLAST search and taxonomy ending.")
 
 def ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_counter_ncbi, f_e_value_threshold, i_mode):
+    """
+        This method handles all computation related to BLASTn searching on the NCBI database. First does a 
+        blastn search and then builds up a summary report that can report the taxonomy found in the search.
+    """
     print("CL: Start with BLASTn summary for NCBI.")
     table_tax_count = {}
     blastn_ncbi(s_input_file, s_blast_complete_ncbi)
@@ -123,6 +126,11 @@ def ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_c
         print("CL: Done with NCBI taxonomy counter.")
         
 def unite(s_input_file, s_blast_summary_unite, s_blast_complete_unite, s_taxonomy_counter_unite, f_e_value_threshold, i_mode):
+    """
+        This method handles all computation related to BLASTn searching on the locally downloaded UNITE database. 
+        First does a blastn search on the local database and then builds up a summary report that can report the 
+        taxonomy found in the search.
+    """
     print("CL: Start with BLASTn summary for UNITE.")
     blastn_unite(s_input_file, s_blast_complete_unite)
     table_tax_count = {}
@@ -153,6 +161,9 @@ def unite(s_input_file, s_blast_summary_unite, s_blast_complete_unite, s_taxonom
         print("CL: Done with UNITE taxonomy counter.")
 
 def blastn_ncbi(s_input_file, s_blast_complete):
+    """
+        Does the BLASTn search online using the NCBI database.
+    """
     record = SeqIO.read(s_input_file, format="fasta")
     try:
         result_handle = NCBIWWW.qblast("blastn", "nt", record.seq)
@@ -166,16 +177,18 @@ def blastn_ncbi(s_input_file, s_blast_complete):
     with open(s_blast_complete, "w") as out_handle:
         out_handle.write(result_handle.read())
     result_handle.close()
-    print("CL: Writing of complete BLASTn report done.")
+    print("CL: Writing of complete NCBI BLASTn report done.")
     
 def blastn_unite(s_input_file, s_blast_complete):
+    """
+        Does a BLASTn search locally using the UNITE database.
+    """
     UNITE_database = "./database/unite/unite_its_database"
     command = ["blastn", "-query", s_input_file, "-db", UNITE_database, "-out", s_blast_complete, "-outfmt", "5"]
     #"-evalue", str(f_e_value_threshold), "-max_target_seqs", "10"]
     
     blast_result = subprocess.run(command, capture_output=True, text=True)
-    print("return code: " + str(blast_result.returncode))
-    print("STDERR: " + blast_result.stderr)
+    print("CL: Writing of complete UNITE BLASTn report done.")
 
 def get_taxonomy_ncbi(accession):
     """
@@ -247,6 +260,9 @@ def get_taxonomy_count_ncbi(table_tax_count, taxonomy):
     return table_tax_count
 
 def get_taxonomy_unite(title):
+    """
+        Takes the title of the fasta file entry and finds the species name in the string. Returns only the species name.
+    """
     title_parts = title.split("|")
     id = None
     taxonomy = None

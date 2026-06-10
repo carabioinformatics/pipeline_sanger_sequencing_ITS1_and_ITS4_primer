@@ -12,6 +12,7 @@ Entrez.email = "26869993@sun.ac.za"
 ############################ TODO ################################
 #TODO Direct stderr to seperate file, not just terminal
 #TODO Make .sp more general
+#TODO Make comparison between different databases
 
 def main():
     """

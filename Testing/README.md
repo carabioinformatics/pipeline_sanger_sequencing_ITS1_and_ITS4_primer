@@ -56,7 +56,8 @@ Testing/
 - Biopython (pip install biopython)
 - Miniconda (https://www.anaconda.com/docs/getting-started/miniconda/install/windows-gui-install)
 - ClustalO ()
-- UNITE2024ITS.fasta file fingerprint: md5:a2deecb84d0f322a7cde137a1c8c67f3
+- UNITE full fasta file: https://doi.plutof.ut.ee/doi/10.15156/BIO/3301230
+[old, doesn't contain taxonomy information - UNITE2024ITS.fasta file fingerprint: md5:a2deecb84d0f322a7cde137a1c8c67f3]
 For updating UNITE database: 
 (Replaces all old database files with updated ones. Code can run normally again)
     - Download the new FASTA

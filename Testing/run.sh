@@ -36,6 +36,7 @@ do
     mkdir -p ./Output/$sample_name/BLAST
     mkdir -p ./Output/$sample_name/Cleanup
     mkdir -p ./Output/$sample_name/Final
+    mkdir -p ./Output/$sample_name/Comparison
     blast_attachment="./Output/$sample_name/BLAST"
     cleanup_attachment="./Output/$sample_name/Cleanup"
     final_attachment="./Output/$sample_name/Final"

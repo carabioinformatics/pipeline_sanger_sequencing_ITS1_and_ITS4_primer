@@ -142,7 +142,7 @@ def unite(s_input_file, s_blast_summary_unite, s_blast_complete_unite, s_taxonom
     blastn_unite(s_input_file, s_blast_complete_unite)
     table_tax_count = {}
     counter = 0
-    ############ Make summary of BLASTn report using NCBI DATABASE #########
+    ############ Make summary of BLASTn report using UNITE DATABASE #########
     with open(s_blast_summary_unite, "w") as summary_out:
         with open(s_blast_complete_unite) as result_handle:
             blast_records = NCBIXML.parse(result_handle)

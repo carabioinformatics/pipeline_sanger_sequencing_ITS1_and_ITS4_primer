@@ -28,7 +28,7 @@ class Hit:
     
     def get_species(self):
         return self.species
-    def add_no_hits(self):
+    def add_num_hits(self):
         self.num_hits += 1
     def get_num_hits(self):
         return self.num_hits
@@ -42,9 +42,12 @@ class Hit:
     def add_score(self, temp_score):
         self.arr_scores.append(temp_score)
         self.update_average_score()
+    def update_score(self, index, score):
+        self.arr_scores[index] = score
+        self.update_average_score()
     def add_bit_score(self, temp_bit_score):
         self.arr_bit_scores.append(temp_bit_score)
-        max_bit_score = self.get_max_bit_score
+        max_bit_score = self.get_max_bit_score()
         if (temp_bit_score > max_bit_score):
             self.max_bit_score = temp_bit_score
     def get_max_bit_score(self):
@@ -53,6 +56,8 @@ class Hit:
             if (self.arr_bit_scores[i] > max):
                 max = self.arr_bit_scores[i]
         return max
+    def get_bit_score(self, index):
+        return self.arr_bit_scores[index]
     def add_coverage(self, temp_coverage):
         self.arr_coverage.append(temp_coverage)
     def add_identity(self, temp_identity):
@@ -121,10 +126,11 @@ def main():
         # std_error.close()
     ################### Perform BLAST on different databases ##################
     ncbi_start_time = time.perf_counter()
-    ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_counter_ncbi, f_e_value_threshold, i_mode)
+    arr_hits_ncbi = []
+    #arr_hits_ncbi = ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_counter_ncbi, f_e_value_threshold, i_mode)
     ncbi_end_time = time.perf_counter()
     unite_start_time = time.perf_counter()
-    unite(s_input_file, s_blast_summary_unite, s_blast_complete_unite, s_taxonomy_counter_unite, f_e_value_threshold, i_mode)
+    arr_hits_unite = unite(s_input_file, s_blast_summary_unite, s_blast_complete_unite, s_taxonomy_counter_unite, f_e_value_threshold, i_mode)
     unite_end_time = time.perf_counter()
     #################### Make performance report ###############################
     end_time = time.perf_counter()
@@ -143,7 +149,7 @@ def main():
     print("CL: BLAST search and taxonomy ending.")
     print("CL: Begin comparison between databases.")
     comparison_start_time = time.perf_counter()
-    comparison(comparison_start_time, s_comparison_report, s_blast_complete_ncbi, s_blast_complete_unite, f_e_value_threshold)
+    comparison(comparison_start_time, s_comparison_report, arr_hits_ncbi, arr_hits_unite, f_e_value_threshold)
     print("CL: End comparison between databases.")
 
 def ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_counter_ncbi, f_e_value_threshold, i_mode):
@@ -154,6 +160,8 @@ def ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_c
     print("CL: Start with BLASTn summary for NCBI.")
     table_tax_count = {}
     counter = 0
+    arr_hits_ncbi = []
+    obj_hit = None
     # blastn_ncbi(s_input_file, s_blast_complete_ncbi)
     ############ Make summary of BLASTn report using NCBI DATABASE #########
     with open(s_blast_summary_ncbi, "w") as summary_out:
@@ -162,11 +170,9 @@ def ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_c
             for record in blast_records:
                 for alignment in record.alignments:
                     for hsp in alignment.hsps:
-                        print(alignment.identity)
-                        print(hsp.expect)
-                        print(alignment.coverage)
-                        if ((alignment.identity > 99) and (hsp.expect < f_e_value_threshold) and (alignment.coverage > 95)):
-                            #Should add bit scoring metric too!!!
+                        #TODO test this?
+                        if (((hsp.identities/hsp.align_length)*100 > 99) and (hsp.expect < f_e_value_threshold) and ((hsp.align_length/record.query_length) > 95)):
+                            #TODO comes in object avg score
                             accession = alignment.accession
                             tax_record = get_taxonomy_ncbi(accession)
                             taxonomy = parse_taxonomy_ncbi(tax_record)
@@ -174,6 +180,13 @@ def ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_c
                                 summary_out.write(f"Accession: {alignment.accession}\t\t")
                                 summary_out.write(f"Species: {taxonomy['species']}\t\t\t\t")
                                 summary_out.write(f"E-value: {hsp.expect}\n")
+                            obj_hit = find_hit_obj_in_arr(arr_hits_ncbi, taxonomy['species'])
+                            if (obj_hit == None):
+                                obj_hit = add_new_obj(taxonomy['species'], 0, alignment.bitscore, alignment.coverage, alignment.identity)
+                                arr_hits_ncbi.append(obj_hit)
+                            else:
+                                #TODO, don't think this will update the array, only the obj
+                                add_additional_entry(obj_hit, alignment.bit_score, alignment.coverage, alignment.identity)
                             if (i_mode == 1):
                                 counter += 1
                                 table_tax_count = get_taxonomy_count_ncbi(table_tax_count, taxonomy)
@@ -188,6 +201,7 @@ def ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_c
             for key, value in sorted_table_tax_count.items():
                 taxonomy_counter_output.write(key + "\t\t\t\t" + str(value) + "\t\t\t\t\t" + str(value/counter*100) + "\n")
         print("CL: Done with NCBI taxonomy counter.")
+    return arr_hits_ncbi
         
 def unite(s_input_file, s_blast_summary_unite, s_blast_complete_unite, s_taxonomy_counter_unite, f_e_value_threshold, i_mode):
     """
@@ -199,6 +213,7 @@ def unite(s_input_file, s_blast_summary_unite, s_blast_complete_unite, s_taxonom
     blastn_unite(s_input_file, s_blast_complete_unite)
     table_tax_count = {}
     counter = 0
+    arr_hits_unite = []
     ############ Make summary of BLASTn report using UNITE DATABASE #########
     with open(s_blast_summary_unite, "w") as summary_out:
         with open(s_blast_complete_unite) as result_handle:
@@ -207,15 +222,30 @@ def unite(s_input_file, s_blast_summary_unite, s_blast_complete_unite, s_taxonom
                 for alignment in record.alignments:
                     for hsp in alignment.hsps:
                         if hsp.expect < f_e_value_threshold: #filter by E-value
+                            #(((hsp.identities/hsp.align_length)*100 > 99) and (hsp.expect < f_e_value_threshold) and ((hsp.align_length/record.query_length) > 95))
                             species = get_taxonomy_unite(alignment.title)
                             if (species != None):
                                 summary_out.write(f"Accession: {alignment.accession}\t\t")
                                 summary_out.write(f"Species: {species}\t\t")
                                 summary_out.write(f"E-value {hsp.expect}\n")
+                            print("bit score: " + str(hsp.bits))
+                            print("identity: " + str((hsp.align_length/record.query_length) * 100))
+                            print("coverage: " + str((hsp.identities/hsp.align_length) * 100))
+                            obj_hit = find_hit_obj_in_arr(arr_hits_unite, species)
+                            if (obj_hit == None):
+                                obj_hit = add_new_obj(species, 1, hsp.bits, (hsp.align_length/record.query_length) * 100, (hsp.identities/hsp.align_length)*100)
+                                arr_hits_unite.append(obj_hit)
+                            else:
+                                #TODO, don't think this will update the array, only the obj
+                                add_additional_entry(obj_hit, hsp.bits, (hsp.align_length/record.query_length) * 100, (hsp.identities/hsp.align_length) * 100)
                             if (i_mode == 1):
                                 counter += 1
                                 table_tax_count = get_taxonomy_count_unite(table_tax_count, species)
     summary_out.close()
+    for t in range(0, len(arr_hits_unite)):
+        for a in range(0, arr_hits_unite[t].get_num_hits()):
+            score = calculate_score(arr_hits_unite[t].get_bit_score(a), arr_hits_unite[t].get_max_bit_score())
+            arr_hits_unite[t].update_score(a, score)
     print("CL: Done with BLASTn summary for UNITE.")
     ####################### Sort species with counts #################################
     sorted_table_tax_count = dict(sorted(table_tax_count.items(), key = lambda x: x[1], reverse=True))
@@ -226,6 +256,7 @@ def unite(s_input_file, s_blast_summary_unite, s_blast_complete_unite, s_taxonom
             for key, value in sorted_table_tax_count.items():
                 taxonomy_counter_output.write(key + "\t\t\t\t" + str(value) + "\t\t\t\t\t" + str(value/counter*100) + "\n")
         print("CL: Done with UNITE taxonomy counter.")
+    return arr_hits_unite
 
 def blastn_ncbi(s_input_file, s_blast_complete):
     """
@@ -359,26 +390,28 @@ def get_taxonomy_count_unite(table_tax_count, taxonomy):
 
     return table_tax_count
 
-# def comparison(comparison_start_time, s_comparison_report, s_blast_summary_ncbi, s_blast_summary_unite, f_e_value_threshold):
-#     arr_hits = []
-#     with open(s_comparison_report, "a") as comparison_output:
-#         comparison_output.write("------------------------------ Comparison report --------------------------------\n")
-#         with open(s_blast_complete_ncbi) as ncbi_input:
-#             with open(s_blast_complete_unite) as unite_input:
-#                 ncbi_blast_records = NCBIXML.parse(ncbi_input)
-#                 unite_blast_records = NCBIXML.parse(unite_input)
-#                 for ncbi_record in ncbi_blast_records:
-#                     for ncbi_alignment in ncbi_record.alignments:
-#                         for ncbi_hsp in ncbi_alignment.hsps:
-#                             if ncbi_hsp.expect < f_e_value_threshold: #filter by E-value
-#                                 obj_hit = Hit(species, 0, 0)
-#         comparison_output.write(f"Date and time of BLASTn search end:\t{datetime.now():%Y-%m-%d %H:%M}\n")
-#         comparison_end_time = time.perf_counter()
-#         comparison_output.write(f"Elapsed time for total comparison: \t{comparison_end_time-comparison_start_time:.2f} seconds\n")
-#         comparison_output.write("------------------------------ Comparison report --------------------------------\n")
-#     comparison_output.close()
-def calculate_score(identity, coverage, bit_score, max_bit_score):
+def comparison(comparison_start_time, s_comparison_report, arr_hits_ncbi, arr_hits_unite, f_e_value_threshold):
+    arr_hits = []
+    with open(s_comparison_report, "a") as comparison_output:
+        comparison_output.write("------------------------------ Comparison report --------------------------------\n")
+        # with open(s_blast_complete_ncbi) as ncbi_input:
+        #     with open(s_blast_complete_unite) as unite_input:
+        #         ncbi_blast_records = NCBIXML.parse(ncbi_input)
+        #         unite_blast_records = NCBIXML.parse(unite_input)
+        #         for ncbi_record in ncbi_blast_records:
+        #             for ncbi_alignment in ncbi_record.alignments:
+        #                 for ncbi_hsp in ncbi_alignment.hsps:
+        #                     if ncbi_hsp.expect < f_e_value_threshold: #filter by E-value
+        #                         obj_hit = Hit(species, 0, 0)
+        comparison_output.write(f"Date and time of BLASTn search end:\t{datetime.now():%Y-%m-%d %H:%M}\n")
+        comparison_end_time = time.perf_counter()
+        comparison_output.write(f"Elapsed time for total comparison: \t{comparison_end_time-comparison_start_time:.2f} seconds\n")
+        comparison_output.write("------------------------------ Comparison report --------------------------------\n")
+    comparison_output.close()
+
+def calculate_score(bit_score, max_bit_score):
     score = 0
+    score = bit_score/max_bit_score
     return score
 
 def add_new_obj(species, database_type, bit_score, coverage, identity):
@@ -386,8 +419,7 @@ def add_new_obj(species, database_type, bit_score, coverage, identity):
     obj_hit.add_bit_score(bit_score)
     obj_hit.add_coverage(coverage)
     obj_hit.add_identity(identity)
-    max_bit_score = obj_hit.get_max_bit_score()
-    obj_hit.add_score(calculate_score(identity, coverage, bit_score, max_bit_score))
+    obj_hit.add_score(0)
     return obj_hit
 
 def add_additional_entry(obj_hit, bit_score, coverage, identity):
@@ -395,18 +427,15 @@ def add_additional_entry(obj_hit, bit_score, coverage, identity):
     obj_hit.add_bit_score(bit_score)
     obj_hit.add_coverage(coverage)
     obj_hit.add_identity(identity)
-    max_bit_score = obj_hit.get_max_bit_score()
-    obj_hit.add_score(calculate_score(identity, coverage, bit_score, max_bit_score))
+    obj_hit.add_score(0)
     return obj_hit
 
 def find_hit_obj_in_arr(arr_hits, species):
-    b_found = False
     obj_hit = Hit("",0,0)
     for b in range(0, len(arr_hits)):
         obj_hit = arr_hits[b]
         if (obj_hit.get_species() == species):
-            b_found = True
-            break
-    return b_found
+            return obj_hit
+    return None
 
 if __name__ == "__main__" : main()

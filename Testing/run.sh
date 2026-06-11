@@ -36,15 +36,16 @@ do
     mkdir -p ./Output/$sample_name/BLAST
     mkdir -p ./Output/$sample_name/Cleanup
     mkdir -p ./Output/$sample_name/Final
-    mkdir -p ./Output/$sample_name/Comparison
+    mkdir -p ./Output/Comparison
     blast_attachment="./Output/$sample_name/BLAST"
     cleanup_attachment="./Output/$sample_name/Cleanup"
     final_attachment="./Output/$sample_name/Final"
+    comparison_attachment="./Output/Comparison"
 
     # Run scrips now
     python3 ./src/TRIMMING_AND_CONSENSUS.py $forward $reverse $1 $2 $cleanup_attachment $final_attachment $blast_attachment
     #blastn -query $1 -db ./database/unite/unite_its_database -out $2 -outfmt 5
-    python3 ./src/BLAST_AND_TAXONOMY.py ./Output/$sample_name/BLAST/$consensus_name $3 $4 $cleanup_attachment $final_attachment $blast_attachment
+    python3 ./src/BLAST_AND_TAXONOMY.py ./Output/$sample_name/BLAST/$consensus_name $3 $4 $cleanup_attachment $final_attachment $blast_attachment $comparison_attachment
 
     # Ending
     echo "$sample_name complete!"

@@ -14,6 +14,51 @@ Entrez.email = "26869993@sun.ac.za"
 #TODO Make .sp more general
 #TODO Make comparison between different databases
 
+class Hit:
+    def __init__(self, species, database_type, num_of_hits):
+        self.species = species
+        self.database_type = database_type #0 - NCBI, 1 - UNITE
+        self.num_hits = num_of_hits
+        self.arr_bit_scores = []
+        self.max_bit_score = 0
+        self.arr_coverage = []
+        self.arr_identity = []
+        self.arr_scores = []
+        self.avg_scores = 0
+    
+    def get_species(self):
+        return self.species
+    def add_no_hits(self):
+        self.num_hits += 1
+    def get_num_hits(self):
+        return self.num_hits
+    def update_average_score(self):
+        sum = 0.00
+        for i in range(0, len(self.arr_scores)):
+            sum += self.arr_scores[i]
+        self.avg_scores = sum/self.num_hits
+    def get_average_score(self):
+        return self.avg_scores
+    def add_score(self, temp_score):
+        self.arr_scores.append(temp_score)
+        self.update_average_score()
+    def add_bit_score(self, temp_bit_score):
+        self.arr_bit_scores.append(temp_bit_score)
+        max_bit_score = self.get_max_bit_score
+        if (temp_bit_score > max_bit_score):
+            self.max_bit_score = temp_bit_score
+    def get_max_bit_score(self):
+        max = 0
+        for i in range(0, len(self.arr_bit_scores)):
+            if (self.arr_bit_scores[i] > max):
+                max = self.arr_bit_scores[i]
+        return max
+    def add_coverage(self, temp_coverage):
+        self.arr_coverage.append(temp_coverage)
+    def add_identity(self, temp_identity):
+        self.arr_identity.append(temp_identity)
+
+
 def main():
     """
         Takes 3 arguments, 
@@ -36,8 +81,8 @@ def main():
     cleanup_directory_extension = sys.argv[4]
     final_directory_extension = sys.argv[5]
     blast_directory_extension = sys.argv[6]
+    comparison_directory_extension = sys.argv[7]
     ######################### Starting values #################################
-    counter = 0
     i_name_start = 0
     i_name_end = 0
     s_file_identifier = ""
@@ -48,10 +93,13 @@ def main():
     s_taxonomy_counter_ncbi = ""
     s_taxonomy_counter_unite = ""
     s_performance_report = ""
+    s_comparison_report = ""
     ncbi_start_time = 0
     ncbi_end_time = 0
     unite_start_time = 0
     unite_end_time = 0
+    comparison_start_time = 0
+    comparison_end_time = 0
     #################### Establish how files will be named #####################
     i_name_start = s_input_file.find("_") + 1
     i_name_end = s_input_file.find("_", i_name_start)
@@ -64,6 +112,7 @@ def main():
         s_taxonomy_counter_ncbi = final_directory_extension + "/INT26_" + s_file_identifier + "_TAXONOMY_COUNTER_NCBI.xml"
         s_taxonomy_counter_unite = final_directory_extension + "/INT26_" + s_file_identifier + "_TAXONOMY_COUNTER_UNITE.xml"
         s_performance_report = final_directory_extension + "/INT26_" + s_file_identifier + "_PERFORMANCE_REPORT.txt"
+        s_comparison_report = comparison_directory_extension + "/INT26_COMPARISON_REPORT.txt"
     else: 
         sys.stderr.write("Error: Invalid starting file argument. Does not follow structure of INT26_{}_CONSENSUS.fas\n")
         sys.exit()
@@ -92,6 +141,10 @@ def main():
         #performance_output.write("Computer where search was run: " + socket.gethostbyname())
     performance_output.close()
     print("CL: BLAST search and taxonomy ending.")
+    print("CL: Begin comparison between databases.")
+    comparison_start_time = time.perf_counter()
+    comparison(comparison_start_time, s_comparison_report, s_blast_complete_ncbi, s_blast_complete_unite, f_e_value_threshold)
+    print("CL: End comparison between databases.")
 
 def ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_counter_ncbi, f_e_value_threshold, i_mode):
     """
@@ -101,7 +154,7 @@ def ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_c
     print("CL: Start with BLASTn summary for NCBI.")
     table_tax_count = {}
     counter = 0
-    blastn_ncbi(s_input_file, s_blast_complete_ncbi)
+    # blastn_ncbi(s_input_file, s_blast_complete_ncbi)
     ############ Make summary of BLASTn report using NCBI DATABASE #########
     with open(s_blast_summary_ncbi, "w") as summary_out:
         with open(s_blast_complete_ncbi) as result_handle:
@@ -109,7 +162,11 @@ def ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_c
             for record in blast_records:
                 for alignment in record.alignments:
                     for hsp in alignment.hsps:
-                        if hsp.expect < f_e_value_threshold: #filter by E-value
+                        print(alignment.identity)
+                        print(hsp.expect)
+                        print(alignment.coverage)
+                        if ((alignment.identity > 99) and (hsp.expect < f_e_value_threshold) and (alignment.coverage > 95)):
+                            #Should add bit scoring metric too!!!
                             accession = alignment.accession
                             tax_record = get_taxonomy_ncbi(accession)
                             taxonomy = parse_taxonomy_ncbi(tax_record)
@@ -302,5 +359,54 @@ def get_taxonomy_count_unite(table_tax_count, taxonomy):
 
     return table_tax_count
 
+# def comparison(comparison_start_time, s_comparison_report, s_blast_summary_ncbi, s_blast_summary_unite, f_e_value_threshold):
+#     arr_hits = []
+#     with open(s_comparison_report, "a") as comparison_output:
+#         comparison_output.write("------------------------------ Comparison report --------------------------------\n")
+#         with open(s_blast_complete_ncbi) as ncbi_input:
+#             with open(s_blast_complete_unite) as unite_input:
+#                 ncbi_blast_records = NCBIXML.parse(ncbi_input)
+#                 unite_blast_records = NCBIXML.parse(unite_input)
+#                 for ncbi_record in ncbi_blast_records:
+#                     for ncbi_alignment in ncbi_record.alignments:
+#                         for ncbi_hsp in ncbi_alignment.hsps:
+#                             if ncbi_hsp.expect < f_e_value_threshold: #filter by E-value
+#                                 obj_hit = Hit(species, 0, 0)
+#         comparison_output.write(f"Date and time of BLASTn search end:\t{datetime.now():%Y-%m-%d %H:%M}\n")
+#         comparison_end_time = time.perf_counter()
+#         comparison_output.write(f"Elapsed time for total comparison: \t{comparison_end_time-comparison_start_time:.2f} seconds\n")
+#         comparison_output.write("------------------------------ Comparison report --------------------------------\n")
+#     comparison_output.close()
+def calculate_score(identity, coverage, bit_score, max_bit_score):
+    score = 0
+    return score
+
+def add_new_obj(species, database_type, bit_score, coverage, identity):
+    obj_hit = Hit(species, database_type, 1)
+    obj_hit.add_bit_score(bit_score)
+    obj_hit.add_coverage(coverage)
+    obj_hit.add_identity(identity)
+    max_bit_score = obj_hit.get_max_bit_score()
+    obj_hit.add_score(calculate_score(identity, coverage, bit_score, max_bit_score))
+    return obj_hit
+
+def add_additional_entry(obj_hit, bit_score, coverage, identity):
+    obj_hit.add_num_hits()
+    obj_hit.add_bit_score(bit_score)
+    obj_hit.add_coverage(coverage)
+    obj_hit.add_identity(identity)
+    max_bit_score = obj_hit.get_max_bit_score()
+    obj_hit.add_score(calculate_score(identity, coverage, bit_score, max_bit_score))
+    return obj_hit
+
+def find_hit_obj_in_arr(arr_hits, species):
+    b_found = False
+    obj_hit = Hit("",0,0)
+    for b in range(0, len(arr_hits)):
+        obj_hit = arr_hits[b]
+        if (obj_hit.get_species() == species):
+            b_found = True
+            break
+    return b_found
 
 if __name__ == "__main__" : main()

@@ -21,6 +21,9 @@ def main():
         sys.argv[2] = Mode: 0 - Just complete BLAST results and BLAST summary
                             1 - BLAST complete results, BLAST summary and taxonomy counting
         sys.argv[3] = E-value threshold
+        sys.argv[4] = String extension added to files that need to be saved in the cleanup directory
+        sys.argv[5] = String extension added to files that need to be saved in the final directory
+        sys.argv[6] = String extension added to files that need to be saved in the blast directory
     """
     print("CL: BLAST search and taxonomy starting")
     start_time = time.perf_counter()
@@ -69,7 +72,7 @@ def main():
         # std_error.close()
     ################### Perform BLAST on different databases ##################
     ncbi_start_time = time.perf_counter()
-    #ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_counter_ncbi, f_e_value_threshold, i_mode)
+    ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_counter_ncbi, f_e_value_threshold, i_mode)
     ncbi_end_time = time.perf_counter()
     unite_start_time = time.perf_counter()
     unite(s_input_file, s_blast_summary_unite, s_blast_complete_unite, s_taxonomy_counter_unite, f_e_value_threshold, i_mode)
@@ -97,6 +100,7 @@ def ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_c
     """
     print("CL: Start with BLASTn summary for NCBI.")
     table_tax_count = {}
+    counter = 0
     blastn_ncbi(s_input_file, s_blast_complete_ncbi)
     ############ Make summary of BLASTn report using NCBI DATABASE #########
     with open(s_blast_summary_ncbi, "w") as summary_out:
@@ -118,12 +122,14 @@ def ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_c
                                 table_tax_count = get_taxonomy_count_ncbi(table_tax_count, taxonomy)
     summary_out.close()
     print("CL: Done with BLASTn summary for NCBI.")
+    ####################### Sort species with counts #################################
+    sorted_table_tax_count = dict(sorted(table_tax_count.items(), key = lambda x: x[1], reverse=True))
     ################### Print NCBI taxonomy counter report ##########################
     if (i_mode == 1):
         with open(s_taxonomy_counter_ncbi, "w") as taxonomy_counter_output:
-            taxonomy_counter_output.write("Species name\t\t\t\t\tCount of species hit\t\t'%'of hits for species\n")
-            for key, value in table_tax_count.items():
-                taxonomy_counter_output.write(key + "\t\t\t\t" + str(value) + "\t\t\t\t\t" + str(value/counter) + "\n")
+            taxonomy_counter_output.write("Species name\t\t\t\t\tCount of species hit\t\t'%'of " + str(counter) +" hits for species\n")
+            for key, value in sorted_table_tax_count.items():
+                taxonomy_counter_output.write(key + "\t\t\t\t" + str(value) + "\t\t\t\t\t" + str(value/counter*100) + "\n")
         print("CL: Done with NCBI taxonomy counter.")
         
 def unite(s_input_file, s_blast_summary_unite, s_blast_complete_unite, s_taxonomy_counter_unite, f_e_value_threshold, i_mode):
@@ -135,6 +141,7 @@ def unite(s_input_file, s_blast_summary_unite, s_blast_complete_unite, s_taxonom
     print("CL: Start with BLASTn summary for UNITE.")
     blastn_unite(s_input_file, s_blast_complete_unite)
     table_tax_count = {}
+    counter = 0
     ############ Make summary of BLASTn report using NCBI DATABASE #########
     with open(s_blast_summary_unite, "w") as summary_out:
         with open(s_blast_complete_unite) as result_handle:
@@ -153,12 +160,14 @@ def unite(s_input_file, s_blast_summary_unite, s_blast_complete_unite, s_taxonom
                                 table_tax_count = get_taxonomy_count_unite(table_tax_count, species)
     summary_out.close()
     print("CL: Done with BLASTn summary for UNITE.")
+    ####################### Sort species with counts #################################
+    sorted_table_tax_count = dict(sorted(table_tax_count.items(), key = lambda x: x[1], reverse=True))
     ################### Print UNITE taxonomy counter report ##########################
     if (i_mode == 1):
         with open(s_taxonomy_counter_unite, "w") as taxonomy_counter_output:
-            taxonomy_counter_output.write("Species name\t\t\t\t\tCount of species hit\t\t'%'of hits for species\n")
-            for key, value in table_tax_count.items():
-                taxonomy_counter_output.write(key + "\t\t\t\t" + str(value) + "\t\t\t\t\t" + str(value/counter) + "\n")
+            taxonomy_counter_output.write("Species name\t\t\t\t\tCount of species hit\t\t'%'of " + str(counter) + " hits for species\n")
+            for key, value in sorted_table_tax_count.items():
+                taxonomy_counter_output.write(key + "\t\t\t\t" + str(value) + "\t\t\t\t\t" + str(value/counter*100) + "\n")
         print("CL: Done with UNITE taxonomy counter.")
 
 def blastn_ncbi(s_input_file, s_blast_complete):

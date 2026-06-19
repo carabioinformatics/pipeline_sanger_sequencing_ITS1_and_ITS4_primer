@@ -88,7 +88,7 @@ def main():
 
 def sliding_window_trim(s_output_fastq_file, s_output_fasta_file, cur_record, window_size, quality_threshold):
     """
-        Takes an alignment file and trims all low resolution reads.
+        Takes a file and trims all low resolution reads.
         Takes regions of size window_size, get's the average quality score
         for that region, and if the region has a low quality score, then 
         it should be removed. This works for low quality reads at the start

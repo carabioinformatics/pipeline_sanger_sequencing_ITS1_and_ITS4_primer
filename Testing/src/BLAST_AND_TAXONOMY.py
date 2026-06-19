@@ -127,7 +127,7 @@ def main():
     ################### Perform BLAST on different databases ##################
     ncbi_start_time = time.perf_counter()
     arr_hits_ncbi = []
-    #arr_hits_ncbi = ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_counter_ncbi, f_e_value_threshold, i_mode)
+    arr_hits_ncbi = ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_counter_ncbi, f_e_value_threshold, i_mode)
     ncbi_end_time = time.perf_counter()
     unite_start_time = time.perf_counter()
     arr_hits_unite = unite(s_input_file, s_blast_summary_unite, s_blast_complete_unite, s_taxonomy_counter_unite, f_e_value_threshold, i_mode)
@@ -170,23 +170,31 @@ def ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_c
             for record in blast_records:
                 for alignment in record.alignments:
                     for hsp in alignment.hsps:
-                        #TODO test this?
-                        if (((hsp.identities/hsp.align_length)*100 > 99) and (hsp.expect < f_e_value_threshold) and ((hsp.align_length/record.query_length) > 95)):
-                            #TODO comes in object avg score
+                        if ((((hsp.identities/hsp.align_length)*100) > 70) and (((hsp.align_length/record.query_length) * 100)> 70)):
+                            print("bit score: " + str(hsp.bits))
+                            # print("coverage: " + str((hsp.align_length/record.query_length) * 100))
+                            # print("identity: " + str((hsp.identities/hsp.align_length) * 100))
+                            #(hsp.expect < f_e_value_threshold) and 
                             accession = alignment.accession
                             tax_record = get_taxonomy_ncbi(accession)
                             taxonomy = parse_taxonomy_ncbi(tax_record)
+                            print("CL: NCBI taxonomy done")
                             if ((taxonomy != None)):
                                 summary_out.write(f"Accession: {alignment.accession}\t\t")
                                 summary_out.write(f"Species: {taxonomy['species']}\t\t\t\t")
                                 summary_out.write(f"E-value: {hsp.expect}\n")
+                            else: 
+                                print("taxonomy == NONE")
                             obj_hit = find_hit_obj_in_arr(arr_hits_ncbi, taxonomy['species'])
+                            print("finding done")
                             if (obj_hit == None):
-                                obj_hit = add_new_obj(taxonomy['species'], 0, alignment.bitscore, alignment.coverage, alignment.identity)
+                                print("New")
+                                obj_hit = add_new_obj(taxonomy['species'], 0, hsp.bits, (hsp.align_length/record.query_length) * 100, (hsp.identities/hsp.align_length)*100)
                                 arr_hits_ncbi.append(obj_hit)
                             else:
+                                print("Additional")
                                 #TODO, don't think this will update the array, only the obj
-                                add_additional_entry(obj_hit, alignment.bit_score, alignment.coverage, alignment.identity)
+                                add_additional_entry(obj_hit, hsp.bits, (hsp.align_length/record.query_length) * 100, (hsp.identities/hsp.align_length)*100)
                             if (i_mode == 1):
                                 counter += 1
                                 table_tax_count = get_taxonomy_count_ncbi(table_tax_count, taxonomy)
@@ -201,6 +209,11 @@ def ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_c
             for key, value in sorted_table_tax_count.items():
                 taxonomy_counter_output.write(key + "\t\t\t\t" + str(value) + "\t\t\t\t\t" + str(value/counter*100) + "\n")
         print("CL: Done with NCBI taxonomy counter.")
+    print(len(arr_hits_ncbi))
+    # for a in range(0, len(arr_hits_ncbi)):
+    #     for y in range(0, arr_hits_ncbi[a].get_num_hits()):
+    #         print(arr_hits_ncbi[a].get_species())
+    #         print(arr_hits_ncbi[a].get_bit_score(y))
     return arr_hits_ncbi
         
 def unite(s_input_file, s_blast_summary_unite, s_blast_complete_unite, s_taxonomy_counter_unite, f_e_value_threshold, i_mode):
@@ -210,7 +223,7 @@ def unite(s_input_file, s_blast_summary_unite, s_blast_complete_unite, s_taxonom
         taxonomy found in the search.
     """
     print("CL: Start with BLASTn summary for UNITE.")
-    blastn_unite(s_input_file, s_blast_complete_unite)
+    #blastn_unite(s_input_file, s_blast_complete_unite)
     table_tax_count = {}
     counter = 0
     arr_hits_unite = []
@@ -221,16 +234,16 @@ def unite(s_input_file, s_blast_summary_unite, s_blast_complete_unite, s_taxonom
             for record in blast_records:
                 for alignment in record.alignments:
                     for hsp in alignment.hsps:
-                        if hsp.expect < f_e_value_threshold: #filter by E-value
-                            #(((hsp.identities/hsp.align_length)*100 > 99) and (hsp.expect < f_e_value_threshold) and ((hsp.align_length/record.query_length) > 95))
+                        if (hsp.expect < f_e_value_threshold): # and ((hsp.identities/hsp.align_length)*100 > 90) and ((hsp.align_length/record.query_length) *100 > 85)):
+                            # e_value and %identity and %coverage
                             species = get_taxonomy_unite(alignment.title)
                             if (species != None):
                                 summary_out.write(f"Accession: {alignment.accession}\t\t")
                                 summary_out.write(f"Species: {species}\t\t")
                                 summary_out.write(f"E-value {hsp.expect}\n")
-                            print("bit score: " + str(hsp.bits))
-                            print("identity: " + str((hsp.align_length/record.query_length) * 100))
-                            print("coverage: " + str((hsp.identities/hsp.align_length) * 100))
+                            # print("bit score: " + str(hsp.bits))
+                            # print("identity: " + str((hsp.align_length/record.query_length) * 100))
+                            # print("coverage: " + str((hsp.identities/hsp.align_length) * 100))
                             obj_hit = find_hit_obj_in_arr(arr_hits_unite, species)
                             if (obj_hit == None):
                                 obj_hit = add_new_obj(species, 1, hsp.bits, (hsp.align_length/record.query_length) * 100, (hsp.identities/hsp.align_length)*100)
@@ -256,6 +269,11 @@ def unite(s_input_file, s_blast_summary_unite, s_blast_complete_unite, s_taxonom
             for key, value in sorted_table_tax_count.items():
                 taxonomy_counter_output.write(key + "\t\t\t\t" + str(value) + "\t\t\t\t\t" + str(value/counter*100) + "\n")
         print("CL: Done with UNITE taxonomy counter.")
+    print(len(arr_hits_unite))
+    # for a in range(0, len(arr_hits_unite)):
+    #     for y in range(0, arr_hits_unite[a].get_num_hits()):
+    #         print(arr_hits_unite[a].get_species())
+    #         print(arr_hits_unite[a].get_bit_score(y))
     return arr_hits_unite
 
 def blastn_ncbi(s_input_file, s_blast_complete):
@@ -293,13 +311,17 @@ def get_taxonomy_ncbi(accession):
         Does an Entrez search to find the taxonomy of the received accession number.
         Returns array tax_records that contains the taxonomy of specificied accession number.
     """
-    tax_handle = Entrez.efetch(db="nucleotide", id=accession, retmode="xml")
+    tax_handle = Entrez.efetch(db="nucleotide", id=accession, retmode="xml")        
+    print("1")
     records = Entrez.read(tax_handle)
+    print("2")
     tax_handle.close()
-
+    print("first entrez")
     #extracting ID
     #tax_id = records[0]["GBSeq_feature-table"][0]["GBFeature_quals"][0]["GBQualifier_value"]
     features = records[0]["GBSeq_feature-table"]
+    if (features == None):
+        print("None")
     
     tax_id = None
     for feature in features:
@@ -307,7 +329,7 @@ def get_taxonomy_ncbi(accession):
             for qual in feature["GBFeature_quals"]:
                 if qual["GBQualifier_name"] == "db_xref" and "taxon:" in qual["GBQualifier_value"]:
                     tax_id = qual["GBQualifier_value"].split(":")[1]
-
+    print("Here")
     if tax_id is None:
         raise ValueError("Tax_id not found")
 
@@ -315,7 +337,7 @@ def get_taxonomy_ncbi(accession):
     tax_handle = Entrez.efetch(db="taxonomy", id=tax_id, retmode="xml")
     tax_records = Entrez.read(tax_handle)
     tax_handle.close()
-
+    print("second entrez")
     return tax_records[0]
 
 def parse_taxonomy_ncbi(tax_records):

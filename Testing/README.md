@@ -46,7 +46,7 @@ Testing/
     Window size:
         This is used when trimming the raw sequences. The raw sequences is split into windows with this size. The average phred score of this window is taken. This this average score is not good, then this region is considered for trimming. This is more accurate than looking at individual nucleotide phred scores.
     Quality threshold for trimming:
-        Above what treshold the phred score should be to not be trimmed off.
+        Above what threshold the phred score should be to not be trimmed off.
     Taxonomy mode:
         Mode 0: Does complete BLASTn search and makes a summary of the results.
         Mode 1: Does a complete BLASTn search and makes a summary of the results. But also then counts how many hits were found for each species.

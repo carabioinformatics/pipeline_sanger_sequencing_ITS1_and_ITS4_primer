@@ -117,7 +117,7 @@ def main():
         s_taxonomy_counter_ncbi = final_directory_extension + "/INT26_" + s_file_identifier + "_TAXONOMY_COUNTER_NCBI.xml"
         s_taxonomy_counter_unite = final_directory_extension + "/INT26_" + s_file_identifier + "_TAXONOMY_COUNTER_UNITE.xml"
         s_performance_report = final_directory_extension + "/INT26_" + s_file_identifier + "_PERFORMANCE_REPORT.txt"
-        s_comparison_report = comparison_directory_extension + "/INT26_COMPARISON_REPORT.txt"
+        s_comparison_report = comparison_directory_extension + "/INT26_" + s_file_identifier = "_COMPARISON_REPORT.txt"
     else: 
         sys.stderr.write("Error: Invalid starting file argument. Does not follow structure of INT26_{}_CONSENSUS.fas\n")
         sys.exit()

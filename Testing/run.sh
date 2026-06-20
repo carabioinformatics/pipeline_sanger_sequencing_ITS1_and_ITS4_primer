@@ -9,7 +9,7 @@ mkdir -p Output
 #taxonomy_mode = $3
 #e_value_threshold = $4
 timing_report="./Output/INT26_TIME_REPORT.txt"
-echo - "Sample name\t\tCleanup time (s)\t\tBLAST time (s)\t\tTotal time (s)" > "$timing_report"
+echo -e "Sample name\tCleanup time (s)\tBLAST time (s)\tTotal time (s)" > "$timing_report"
 
 for forward in ./Input/*ITS1___1.ab1
 do
@@ -59,7 +59,7 @@ do
     BLAST_time=$(awk "BEGIN {print $BLAST_end_time - $BLAST_start_time}")
     total_end_time=$(date +%s.%N)
     total_time=$(awk "BEGIN {print $total_end_time - $total_start_time}")
-    echo - "$sample_name\t\t$cleanup_time\t\t$BLAST_time\t\t$total_time" >> "$timing_report"
+    echo -e "$sample_name\t$cleanup_time\t$BLAST_time\t$total_time" >> "$timing_report"
 
     # Ending
     echo "$sample_name complete!"
@@ -67,5 +67,6 @@ do
 done
 
 echo "Pipeline finished"
-pytho3 TIME_REPORT_PLOTTING.py $timing_report
+python3 ./src/TIME_REPORT_PLOTTING.py $timing_report
+echo "================================================="
 echo "End main run script"

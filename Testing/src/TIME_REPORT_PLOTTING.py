@@ -13,7 +13,7 @@ def main():
     plt.figure(figsize=(8,4))
     plt.bar(time_input["Sample name"], time_input["Total time (s)"])
     # Plot threshold line at 30 seconds
-    plt.axhline(y=150, color="red", linestyle="--", linewidth=2, label="Threshold")
+    plt.axhline(y=100, color="red", linestyle="--", linewidth=2, label="Threshold")
 
     # Display preferences 
     plt.xlabel("Sample name")

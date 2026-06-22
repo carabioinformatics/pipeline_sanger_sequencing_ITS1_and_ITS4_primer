@@ -160,8 +160,8 @@ def main():
     ###################### Comparison between databases ########################
     print("CL: Begin comparison between databases.")
     comparison_start_time = time.perf_counter()
-    print("NCBI hits: " + str(len(arr_hits_ncbi)))
-    print("UNITE hits: " + str(len(arr_hits_unite)))
+    print("CL: NCBI hits: " + str(len(arr_hits_ncbi)))
+    print("CL: UNITE hits: " + str(len(arr_hits_unite)))
     comparison(s_comparison_report, s_comparison_graph, arr_hits_ncbi, arr_hits_unite, f_e_value_threshold)
     comparison_end_time = time.perf_counter()
     with open(s_performance_report, "a") as performance_output:
@@ -184,7 +184,7 @@ def ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_c
     counter = 0
     arr_hits_ncbi = []
     obj_hit = None
-    blastn_ncbi(s_input_file, s_blast_complete_ncbi)
+    #blastn_ncbi(s_input_file, s_blast_complete_ncbi)
     ############ Make summary of BLASTn report using NCBI DATABASE #########
     with open(s_blast_summary_ncbi, "w") as summary_out:
         with open(s_blast_complete_ncbi) as result_handle:
@@ -192,7 +192,7 @@ def ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_c
             for record in blast_records:
                 for alignment in record.alignments:
                     for hsp in alignment.hsps:
-                        if ((((hsp.identities/hsp.align_length)*100) > identity_threshold) and (((hsp.align_length/record.query_length) * 100)> coverage_threshold)):
+                        if ((hsp.expect < f_e_value_threshold) and (((hsp.identities/hsp.align_length)*100) > identity_threshold) and (((hsp.align_length/record.query_length) * 100)> coverage_threshold)):
                             #print("bit score: " + str(hsp.bits))
                             # print("coverage: " + str((hsp.align_length/record.query_length) * 100))
                             # print("identity: " + str((hsp.identities/hsp.align_length) * 100))
@@ -216,13 +216,10 @@ def ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_c
                             # else: 
                             #     print("taxonomy == NONE")
                             obj_hit = find_hit_obj_in_arr(arr_hits_ncbi, species)
-                            #print("finding done")
                             if (obj_hit == None):
-                                #print("New")
                                 obj_hit = add_new_obj(species, 0, hsp.bits, (hsp.align_length/record.query_length) * 100, (hsp.identities/hsp.align_length)*100)
                                 arr_hits_ncbi.append(obj_hit)
                             else:
-                                #print("Additional")
                                 #TODO, don't think this will update the array, only the obj
                                 add_additional_entry(obj_hit, hsp.bits, (hsp.align_length/record.query_length) * 100, (hsp.identities/hsp.align_length)*100)
                             if (taxonomy_mode == 1):
@@ -230,6 +227,10 @@ def ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_c
                                 table_tax_count = get_taxonomy_count_ncbi_without_entrez(table_tax_count, species)
                                 # table_tax_count = get_taxonomy_count_ncbi(table_tax_count, taxonomy)
     summary_out.close()
+    for t in range(0, len(arr_hits_ncbi)):
+        for a in range(0, arr_hits_ncbi[t].get_num_hits()):
+            score = calculate_score(arr_hits_ncbi[t].get_bit_score(a), arr_hits_ncbi[t].get_max_bit_score())
+            arr_hits_ncbi[t].update_score(a, score)
     print("CL: Done with BLASTn summary for NCBI.")
     ####################### Sort species with counts #################################
     sorted_table_tax_count = dict(sorted(table_tax_count.items(), key = lambda x: x[1], reverse=True))
@@ -254,7 +255,7 @@ def unite(s_input_file, s_blast_summary_unite, s_blast_complete_unite, s_taxonom
         taxonomy found in the search.
     """
     print("CL: Start with BLASTn summary for UNITE.")
-    blastn_unite(s_input_file, s_blast_complete_unite)
+    #blastn_unite(s_input_file, s_blast_complete_unite)
     table_tax_count = {}
     counter = 0
     arr_hits_unite = []
@@ -265,7 +266,7 @@ def unite(s_input_file, s_blast_summary_unite, s_blast_complete_unite, s_taxonom
             for record in blast_records:
                 for alignment in record.alignments:
                     for hsp in alignment.hsps:
-                        if ((((hsp.identities/hsp.align_length)*100) > identity_threshold) and (((hsp.align_length/record.query_length) * 100)> coverage_threshold)):
+                        if ((hsp.expect < f_e_value_threshold) and (((hsp.identities/hsp.align_length)*100) > identity_threshold) and (((hsp.align_length/record.query_length) * 100)> coverage_threshold)):
                         #if (hsp.expect < f_e_value_threshold): # and ((hsp.identities/hsp.align_length)*100 > 90) and ((hsp.align_length/record.query_length) *100 > 85)):
                             # e_value and %identity and %coverage
                             species = get_taxonomy_unite(alignment.title)
@@ -453,74 +454,6 @@ def get_taxonomy_count_unite(table_tax_count, taxonomy):
 
     return table_tax_count
 
-def comparison(s_comparison_report, s_comparison_graph, arr_hits_ncbi, arr_hits_unite, f_e_value_threshold):
-    total_score_dict = {}
-    with open(s_comparison_report, "w") as comparison_output:
-        comparison_output.write("Species\tNCBI score\tUNITE score\tTotal score\n")
-        # comparison_output.write("------------------------------ Comparison report --------------------------------\n")
-        for b in range(len(arr_hits_ncbi)):
-            for t in range(len(arr_hits_unite)):
-                arr_score = []
-                #total_hits = 0
-                #species_hit = 0
-                # print("NCBI species: " + arr_hits_ncbi[b].get_species())
-                # print("UNITE species: " + arr_hits_unite[t].get_species())
-                if (arr_hits_unite[t].get_species() == arr_hits_ncbi[b].get_species()):
-                    print("Found a match")
-                    #species_hit = arr_hits_ncbi[b].get_num_hits() + arr_hits_unite[t].get_num_hits()
-                    ncbi_score = arr_hits_ncbi[b].get_average_score()
-                    unite_score = arr_hits_unite[t].get_average_score()
-                    total_score = (ncbi_score + unite_score)/2
-                    comparison_output.write(f"{arr_hits_ncbi[b].get_species()}\t{ncbi_score:.4f}\t{unite_score:.4f}\t{total_score:.4f}\n")
-                    arr_score = [ncbi_score, unite_score, total_score]
-                    if (arr_hits_ncbi[b].get_species()) not in total_score_dict:
-                        total_score_dict.update({arr_hits_ncbi[b].get_species(): arr_score})
-                # what happens to hits that don't correlate?
-        # comparison_output.write(f"Date and time of BLASTn search end:\t{datetime.now():%Y-%m-%d %H:%M}\n")
-        # comparison_end_time = time.perf_counter()
-        # comparison_output.write(f"Elapsed time for total comparison: \t{comparison_end_time-comparison_start_time:.2f} seconds\n")
-        # comparison_output.write("------------------------------ Comparison report --------------------------------\n")
-    comparison_output.close()
-
-    print("CL: Start with plotting species score")
-    species = list(total_score_dict.keys())
-    scores = numpy.array(list(total_score_dict.values()))
-    ncbi_score = [scores[0] for scores in total_score_dict.values()] #scores[:, 0]
-    unite_score = [scores[1] for scores in total_score_dict.values()]#scores[:, 1]
-    total_score = [scores[2] for scores in total_score_dict.values()]#scores[:, 2]
-
-    location = numpy.arange(len(species))
-    width = 0.25
-    #species_score_input = pd.read_csv(s_comparison_report, sep= '\t')
-    # Plot bar graph
-    figure, axes = plt.subplots(figsize=(10,6))
-    bar1 = axes.bar(location - width, ncbi_score, width, label="NCBI score")
-    bar2 = axes.bar(location, unite_score, width, label="UNITE score")
-    bar3 = axes.bar(location + width, total_score, width, label="Average score")
-    #plt.figure(figsize=(8,4))
-    #plt.bar(species_score_input["Species"], species_score_input["NCBI score"])
-    
-    # Labeling
-    axes.set_xlabel("Species")
-    axes.set_ylabel("Score")
-    axes.set_title("Species score from each database")
-    axes.set_xticks(location)
-    axes.set_xticklabels(species, rotation=30, ha="right")
-    axes.set_ylim(0,1)
-    # plt.xlabel("Species")
-    # plt.ylabel("Score (0-1)")
-    # plt.title("Species found from each database with scores")
-    axes.legend()
-
-    axes.bar_label(bar1, fmt="%.2f", fontsize=8)
-    axes.bar_label(bar2, fmt="%.2f", fontsize=8)
-    axes.bar_label(bar3, fmt="%.2f", fontsize=8)
-
-    plt.tight_layout()
-    plt.savefig(s_comparison_graph, dpi=300)
-    plt.show()
-    print("CL: End with plotting species score")
-
 def calculate_score(bit_score, max_bit_score):
     score = 0
     score = bit_score/max_bit_score
@@ -550,4 +483,63 @@ def find_hit_obj_in_arr(arr_hits, species):
             return obj_hit
     return None
 
+def comparison(s_comparison_report, s_comparison_graph, arr_hits_ncbi, arr_hits_unite, f_e_value_threshold):
+    total_score_dict = {}
+    with open(s_comparison_report, "w") as comparison_output:
+        comparison_output.write("Species\tNCBI score\tUNITE score\tTotal score\n")
+        for b in range(len(arr_hits_ncbi)):
+            for t in range(len(arr_hits_unite)):
+                arr_score = []
+                if (arr_hits_unite[t].get_species() == arr_hits_ncbi[b].get_species()):
+                    ncbi_score = arr_hits_ncbi[b].get_average_score()
+                    unite_score = arr_hits_unite[t].get_average_score()
+                    total_score = (ncbi_score + unite_score)/2
+                    comparison_output.write(f"{arr_hits_ncbi[b].get_species()}\t{ncbi_score:.4f}\t{unite_score:.4f}\t{total_score:.4f}\n")
+                    arr_score = [ncbi_score, unite_score, total_score]
+                    if (arr_hits_ncbi[b].get_species()) not in total_score_dict:
+                        total_score_dict.update({arr_hits_ncbi[b].get_species(): arr_score})
+                # what happens to hits that don't correlate?
+    comparison_output.close()
+    comparison_plotting(total_score_dict, s_comparison_graph)
+
+def comparison_plotting(total_score_dict, s_comparison_graph):
+    print("CL: Start with plotting species score")
+    species = list(total_score_dict.keys())
+    scores = numpy.array(list(total_score_dict.values()))
+    ncbi_score = [scores[0] for scores in total_score_dict.values()] #scores[:, 0]
+    unite_score = [scores[1] for scores in total_score_dict.values()]#scores[:, 1]
+    total_score = [scores[2] for scores in total_score_dict.values()]#scores[:, 2]
+
+    location = numpy.arange(len(species))
+    width = 0.25
+
+    # Plot bar graph
+    figure, axes = plt.subplots(figsize=(10,6))
+    bar1 = axes.bar(location - width, ncbi_score, width, label="NCBI score")
+    bar2 = axes.bar(location, unite_score, width, label="UNITE score")
+    bar3 = axes.bar(location + width, total_score, width, label="Average score")
+    #plt.figure(figsize=(8,4))
+    #plt.bar(species_score_input["Species"], species_score_input["NCBI score"])
+    
+    # Labeling
+    axes.set_xlabel("Species")
+    axes.set_ylabel("Score")
+    axes.set_title("Species score from each database")
+    axes.set_xticks(location)
+    axes.set_xticklabels(species, rotation=30, ha="right")
+    axes.set_ylim(0,1)
+    # plt.xlabel("Species")
+    # plt.ylabel("Score (0-1)")
+    # plt.title("Species found from each database with scores")
+    axes.legend()
+
+    axes.bar_label(bar1, fmt="%.2f", fontsize=8)
+    axes.bar_label(bar2, fmt="%.2f", fontsize=8)
+    axes.bar_label(bar3, fmt="%.2f", fontsize=8)
+
+    plt.tight_layout()
+    plt.savefig(s_comparison_graph, dpi=300)
+    #plt.show()
+    print("CL: End with plotting species score")
+    
 if __name__ == "__main__" : main()

@@ -8,6 +8,9 @@ from Bio.Blast import NCBIXML
 from Bio import Entrez
 from urllib.error import URLError
 import re
+import numpy
+import pandas as pd
+import matplotlib.pyplot as plt
 Entrez.email = "26869993@sun.ac.za"
 
 ############################ TODO ################################
@@ -121,22 +124,20 @@ def main():
         s_taxonomy_counter_unite = final_directory_extension + "/INT26_" + s_file_identifier + "_TAXONOMY_COUNTER_UNITE.xml"
         s_performance_report = final_directory_extension + "/INT26_" + s_file_identifier + "_PERFORMANCE_REPORT.txt"
         s_comparison_report = comparison_directory_extension + "/INT26_" + s_file_identifier + "_COMPARISON_REPORT.txt"
+        s_comparison_graph = comparison_directory_extension + "/INT26_" + s_file_identifier + "_COMPARISON_GRAPH.png"
     else: 
         sys.stderr.write("Error: Invalid starting file argument. Does not follow structure of INT26_{}_CONSENSUS.fas\n")
         sys.exit()
-        # with open("Error_file.txt", "w") as std_error:
-        #     std_error.write("Invalid starting file argument. Does not follow structure of INT26_{}_CONSENSUS.fas")
-        # std_error.close()
     ################### Perform BLAST on different databases ##################
     if (database_mode != 2):
         ncbi_start_time = time.perf_counter()
         arr_hits_ncbi = []
-        arr_hits_ncbi = ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_counter_ncbi, f_e_value_threshold, taxonomy_mode)
+        arr_hits_ncbi = ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_counter_ncbi, f_e_value_threshold, identity_threshold, coverage_threshold, taxonomy_mode)
         ncbi_end_time = time.perf_counter()
     if (database_mode != 1):
         unite_start_time = time.perf_counter()
         arr_hits_unite = []
-        arr_hits_unite = unite(s_input_file, s_blast_summary_unite, s_blast_complete_unite, s_taxonomy_counter_unite, f_e_value_threshold, taxonomy_mode)
+        arr_hits_unite = unite(s_input_file, s_blast_summary_unite, s_blast_complete_unite, s_taxonomy_counter_unite, f_e_value_threshold, identity_threshold, coverage_threshold, taxonomy_mode)
         unite_end_time = time.perf_counter()
     #################### Make performance report ###############################
     end_time = time.perf_counter()
@@ -156,12 +157,24 @@ def main():
         #performance_output.write("Computer where search was run: " + socket.gethostbyname())
     performance_output.close()
     print("CL: BLAST search and taxonomy ending.")
-    # print("CL: Begin comparison between databases.")
-    # comparison_start_time = time.perf_counter()
-    # comparison(comparison_start_time, s_comparison_report, arr_hits_ncbi, arr_hits_unite, f_e_value_threshold)
-    # print("CL: End comparison between databases.")
+    ###################### Comparison between databases ########################
+    print("CL: Begin comparison between databases.")
+    comparison_start_time = time.perf_counter()
+    print("NCBI hits: " + str(len(arr_hits_ncbi)))
+    print("UNITE hits: " + str(len(arr_hits_unite)))
+    comparison(s_comparison_report, s_comparison_graph, arr_hits_ncbi, arr_hits_unite, f_e_value_threshold)
+    comparison_end_time = time.perf_counter()
+    with open(s_performance_report, "a") as performance_output:
+        performance_output.write("------------------------------ Comparison report -------------------------------\n")
+        performance_output.write(f"Date and time of comparison end:\t{datetime.now():%Y-%m-%d %H:%M}\n")
+        performance_output.write(f"Elapsed time for total comparison: \t{comparison_end_time-comparison_start_time:.2f} seconds\n")
+        performance_output.write("Comparison data saved to: " + s_comparison_report)
+        performance_output.write("Comparison graph saved to: " + s_comparison_graph)
+        performance_output.write("------------------------------ Comparison report -------------------------------\n")
+    performance_output.close()
+    print("CL: End comparison between databases.")
 
-def ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_counter_ncbi, f_e_value_threshold, taxonomy_mode):
+def ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_counter_ncbi, f_e_value_threshold, identity_threshold, coverage_threshold, taxonomy_mode):
     """
         This method handles all computation related to BLASTn searching on the NCBI database. First does a 
         blastn search and then builds up a summary report that can report the taxonomy found in the search.
@@ -179,7 +192,7 @@ def ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_c
             for record in blast_records:
                 for alignment in record.alignments:
                     for hsp in alignment.hsps:
-                        if ((((hsp.identities/hsp.align_length)*100) > 70) and (((hsp.align_length/record.query_length) * 100)> 70)):
+                        if ((((hsp.identities/hsp.align_length)*100) > identity_threshold) and (((hsp.align_length/record.query_length) * 100)> coverage_threshold)):
                             #print("bit score: " + str(hsp.bits))
                             # print("coverage: " + str((hsp.align_length/record.query_length) * 100))
                             # print("identity: " + str((hsp.identities/hsp.align_length) * 100))
@@ -234,7 +247,7 @@ def ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_c
     #         print(arr_hits_ncbi[a].get_bit_score(y))
     return arr_hits_ncbi
         
-def unite(s_input_file, s_blast_summary_unite, s_blast_complete_unite, s_taxonomy_counter_unite, f_e_value_threshold, taxonomy_mode):
+def unite(s_input_file, s_blast_summary_unite, s_blast_complete_unite, s_taxonomy_counter_unite, f_e_value_threshold, identity_threshold, coverage_threshold, taxonomy_mode):
     """
         This method handles all computation related to BLASTn searching on the locally downloaded UNITE database. 
         First does a blastn search on the local database and then builds up a summary report that can report the 
@@ -252,10 +265,11 @@ def unite(s_input_file, s_blast_summary_unite, s_blast_complete_unite, s_taxonom
             for record in blast_records:
                 for alignment in record.alignments:
                     for hsp in alignment.hsps:
-                        if ((((hsp.identities/hsp.align_length)*100) > 70) and (((hsp.align_length/record.query_length) * 100)> 70)):
+                        if ((((hsp.identities/hsp.align_length)*100) > identity_threshold) and (((hsp.align_length/record.query_length) * 100)> coverage_threshold)):
                         #if (hsp.expect < f_e_value_threshold): # and ((hsp.identities/hsp.align_length)*100 > 90) and ((hsp.align_length/record.query_length) *100 > 85)):
                             # e_value and %identity and %coverage
                             species = get_taxonomy_unite(alignment.title)
+                            species = species.replace("_", " ")
                             if (species != None):
                                 summary_out.write(f"Accession: {alignment.accession}\t\t")
                                 summary_out.write(f"Species: {species}\t\t")
@@ -439,24 +453,73 @@ def get_taxonomy_count_unite(table_tax_count, taxonomy):
 
     return table_tax_count
 
-def comparison(comparison_start_time, s_comparison_report, arr_hits_ncbi, arr_hits_unite, f_e_value_threshold):
-    arr_hits = []
-    with open(s_comparison_report, "a") as comparison_output:
-        comparison_output.write("------------------------------ Comparison report --------------------------------\n")
-        # with open(s_blast_complete_ncbi) as ncbi_input:
-        #     with open(s_blast_complete_unite) as unite_input:
-        #         ncbi_blast_records = NCBIXML.parse(ncbi_input)
-        #         unite_blast_records = NCBIXML.parse(unite_input)
-        #         for ncbi_record in ncbi_blast_records:
-        #             for ncbi_alignment in ncbi_record.alignments:
-        #                 for ncbi_hsp in ncbi_alignment.hsps:
-        #                     if ncbi_hsp.expect < f_e_value_threshold: #filter by E-value
-        #                         obj_hit = Hit(species, 0, 0)
-        comparison_output.write(f"Date and time of BLASTn search end:\t{datetime.now():%Y-%m-%d %H:%M}\n")
-        comparison_end_time = time.perf_counter()
-        comparison_output.write(f"Elapsed time for total comparison: \t{comparison_end_time-comparison_start_time:.2f} seconds\n")
-        comparison_output.write("------------------------------ Comparison report --------------------------------\n")
+def comparison(s_comparison_report, s_comparison_graph, arr_hits_ncbi, arr_hits_unite, f_e_value_threshold):
+    total_score_dict = {}
+    with open(s_comparison_report, "w") as comparison_output:
+        comparison_output.write("Species\tNCBI score\tUNITE score\tTotal score\n")
+        # comparison_output.write("------------------------------ Comparison report --------------------------------\n")
+        for b in range(len(arr_hits_ncbi)):
+            for t in range(len(arr_hits_unite)):
+                arr_score = []
+                #total_hits = 0
+                #species_hit = 0
+                # print("NCBI species: " + arr_hits_ncbi[b].get_species())
+                # print("UNITE species: " + arr_hits_unite[t].get_species())
+                if (arr_hits_unite[t].get_species() == arr_hits_ncbi[b].get_species()):
+                    print("Found a match")
+                    #species_hit = arr_hits_ncbi[b].get_num_hits() + arr_hits_unite[t].get_num_hits()
+                    ncbi_score = arr_hits_ncbi[b].get_average_score()
+                    unite_score = arr_hits_unite[t].get_average_score()
+                    total_score = (ncbi_score + unite_score)/2
+                    comparison_output.write(f"{arr_hits_ncbi[b].get_species()}\t{ncbi_score:.4f}\t{unite_score:.4f}\t{total_score:.4f}\n")
+                    arr_score = [ncbi_score, unite_score, total_score]
+                    if (arr_hits_ncbi[b].get_species()) not in total_score_dict:
+                        total_score_dict.update({arr_hits_ncbi[b].get_species(): arr_score})
+                # what happens to hits that don't correlate?
+        # comparison_output.write(f"Date and time of BLASTn search end:\t{datetime.now():%Y-%m-%d %H:%M}\n")
+        # comparison_end_time = time.perf_counter()
+        # comparison_output.write(f"Elapsed time for total comparison: \t{comparison_end_time-comparison_start_time:.2f} seconds\n")
+        # comparison_output.write("------------------------------ Comparison report --------------------------------\n")
     comparison_output.close()
+
+    print("CL: Start with plotting species score")
+    species = list(total_score_dict.keys())
+    scores = numpy.array(list(total_score_dict.values()))
+    ncbi_score = [scores[0] for scores in total_score_dict.values()] #scores[:, 0]
+    unite_score = [scores[1] for scores in total_score_dict.values()]#scores[:, 1]
+    total_score = [scores[2] for scores in total_score_dict.values()]#scores[:, 2]
+
+    location = numpy.arange(len(species))
+    width = 0.25
+    #species_score_input = pd.read_csv(s_comparison_report, sep= '\t')
+    # Plot bar graph
+    figure, axes = plt.subplots(figsize=(10,6))
+    bar1 = axes.bar(location - width, ncbi_score, width, label="NCBI score")
+    bar2 = axes.bar(location, unite_score, width, label="UNITE score")
+    bar3 = axes.bar(location + width, total_score, width, label="Average score")
+    #plt.figure(figsize=(8,4))
+    #plt.bar(species_score_input["Species"], species_score_input["NCBI score"])
+    
+    # Labeling
+    axes.set_xlabel("Species")
+    axes.set_ylabel("Score")
+    axes.set_title("Species score from each database")
+    axes.set_xticks(location)
+    axes.set_xticklabels(species, rotation=30, ha="right")
+    axes.set_ylim(0,1)
+    # plt.xlabel("Species")
+    # plt.ylabel("Score (0-1)")
+    # plt.title("Species found from each database with scores")
+    axes.legend()
+
+    axes.bar_label(bar1, fmt="%.2f", fontsize=8)
+    axes.bar_label(bar2, fmt="%.2f", fontsize=8)
+    axes.bar_label(bar3, fmt="%.2f", fontsize=8)
+
+    plt.tight_layout()
+    plt.savefig(s_comparison_graph, dpi=300)
+    plt.show()
+    print("CL: End with plotting species score")
 
 def calculate_score(bit_score, max_bit_score):
     score = 0

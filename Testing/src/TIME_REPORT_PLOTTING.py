@@ -23,7 +23,7 @@ def main():
     plt.tight_layout()
     
     plt.savefig("./Output/INT26_TIME_REPORT_GRAPH.png", dpi=300)
-    plt.show()
+    #plt.show()
 
     print("CL: Done with time plotting.")
 

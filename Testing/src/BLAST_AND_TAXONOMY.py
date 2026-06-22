@@ -74,10 +74,16 @@ def main():
         sys.argv[1] = Name of input consensus file in format INT26_{}_CONSENSUS.fas
         sys.argv[2] = Mode: 0 - Just complete BLAST results and BLAST summary
                             1 - BLAST complete results, BLAST summary and taxonomy counting
-        sys.argv[3] = E-value threshold
-        sys.argv[4] = String extension added to files that need to be saved in the cleanup directory
-        sys.argv[5] = String extension added to files that need to be saved in the final directory
-        sys.argv[6] = String extension added to files that need to be saved in the blast directory
+        sys.argv[3] = Database search mode
+                    0 - Search both databases
+                    1 - Search just NCBI
+                    2 - Search just UNITE
+        sys.argv[4] = E-value threshold
+        sys.argv[5] = Identity % threshold
+        sys.argv[6] = Coverage % threshold
+        sys.argv[7] = String extension added to files that need to be saved in the final directory
+        sys.argv[8] = String extension added to files that need to be saved in the blast directory
+        sys.argv[9] = String extension added to files that need to be saved in the comparison directory
     """
     print("CL: BLAST search and taxonomy starting")
     start_time = time.perf_counter()
@@ -341,12 +347,22 @@ def blastn_unite(s_input_file, s_blast_complete):
     print("CL: Writing of complete UNITE BLASTn report done.")
 
 def extract_species_ncbi(title):
+    """
+        This method receives the title from a NCBI BLASTn hit and then extracts the species name
+        found in the title. It returns the species as a string.
+    """
     species = re.search(r'([A-Z][a-z]+ [a-z]+)', title)
     if species:
         return species.group(1)
     return None
 
 def get_taxonomy_count_ncbi_without_entrez(table_tax_count, species):
+    """
+        This method is used to build up a dictionary of species that have been found in the BLASTn search
+        and how many times it has been found. If the species already exists in the dictionary, the count 
+        for that species is just increased. The new dictionary is then returned. This is done using data 
+        from the complete .xml file after the BLAST search instead of starting a new Entrez search. 
+    """
     if (species) in table_tax_count:
         cur_value = table_tax_count.get(species)
         cur_value += 1
@@ -455,11 +471,18 @@ def get_taxonomy_count_unite(table_tax_count, taxonomy):
     return table_tax_count
 
 def calculate_score(bit_score, max_bit_score):
+    """
+        Calculates a score based on the bit score and maximum bit score. Returns the score. 
+    """
     score = 0
     score = bit_score/max_bit_score
     return score
 
 def add_new_obj(species, database_type, bit_score, coverage, identity):
+    """
+        Makes a new object when a new species hit is found in the complete BLAST search report.
+        This contains all the values associated to this new species hit. The object is then returned.
+    """
     obj_hit = Hit(species, database_type, 1)
     obj_hit.add_bit_score(bit_score)
     obj_hit.add_coverage(coverage)
@@ -468,6 +491,10 @@ def add_new_obj(species, database_type, bit_score, coverage, identity):
     return obj_hit
 
 def add_additional_entry(obj_hit, bit_score, coverage, identity):
+    """"
+        An object for this species already exists but now a different hit for this 
+        species has been found. The data for this hit should also be added to the arrays.
+    """
     obj_hit.add_num_hits()
     obj_hit.add_bit_score(bit_score)
     obj_hit.add_coverage(coverage)
@@ -476,6 +503,10 @@ def add_additional_entry(obj_hit, bit_score, coverage, identity):
     return obj_hit
 
 def find_hit_obj_in_arr(arr_hits, species):
+    """
+        Check if an object for a certain species is already in the array. If it is, 
+        then return the object. If not, then return None.
+    """
     obj_hit = Hit("",0,0)
     for b in range(0, len(arr_hits)):
         obj_hit = arr_hits[b]
@@ -484,6 +515,10 @@ def find_hit_obj_in_arr(arr_hits, species):
     return None
 
 def comparison(s_comparison_report, s_comparison_graph, arr_hits_ncbi, arr_hits_unite, f_e_value_threshold):
+    """
+        This method is used to compare the hit results between the different databases. It compares the scores
+        for each species from each database. The average scores for each species is written to a .txt file.
+    """
     total_score_dict = {}
     with open(s_comparison_report, "w") as comparison_output:
         comparison_output.write("Species\tNCBI score\tUNITE score\tTotal score\n")
@@ -491,6 +526,8 @@ def comparison(s_comparison_report, s_comparison_graph, arr_hits_ncbi, arr_hits_
             for t in range(len(arr_hits_unite)):
                 arr_score = []
                 if (arr_hits_unite[t].get_species() == arr_hits_ncbi[b].get_species()):
+                    print("NCBI sub: " + arr_hits_ncbi[b].get_species() + " : " + str(arr_hits_ncbi[b].get_num_hits()))
+                    print("UNITE sub: " + arr_hits_unite[b].get_species() + " : " + str(arr_hits_unite[b].get_num_hits()))
                     ncbi_score = arr_hits_ncbi[b].get_average_score()
                     unite_score = arr_hits_unite[t].get_average_score()
                     total_score = (ncbi_score + unite_score)/2
@@ -503,6 +540,10 @@ def comparison(s_comparison_report, s_comparison_graph, arr_hits_ncbi, arr_hits_
     comparison_plotting(total_score_dict, s_comparison_graph)
 
 def comparison_plotting(total_score_dict, s_comparison_graph):
+    """
+        This method plots a graph displaying all the database scores for each species. This is 
+        then saved to easily identify which species provides the most promising hit.
+    """
     print("CL: Start with plotting species score")
     species = list(total_score_dict.keys())
     scores = numpy.array(list(total_score_dict.values()))

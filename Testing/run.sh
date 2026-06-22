@@ -1,13 +1,17 @@
 #!/bin/bash
 
 echo "Start main run script"
-#./build_database.sh
-
 mkdir -p Output
-#window_size = $1
-#quality_threshold = $2
-#taxonomy_mode = $3
-#e_value_threshold = $4
+
+taxonomy_mode=$1
+database_mode=$2
+
+window_size=5
+quality_threshold=20
+e_value_threshold=1e-15
+identity_threshold=70
+coverage_threshold=70
+
 timing_report="./Output/INT26_TIME_REPORT.txt"
 echo -e "Sample name\tCleanup time (s)\tBLAST time (s)\tTotal time (s)" > "$timing_report"
 
@@ -39,7 +43,7 @@ do
     mkdir -p ./Output/$sample_name/BLAST
     mkdir -p ./Output/$sample_name/Cleanup
     mkdir -p ./Output/$sample_name/Final
-    mkdir -p ./Output/Comparison
+    mkdir -p ./Output/$sample_name/Comparison
     blast_attachment="./Output/$sample_name/BLAST"
     cleanup_attachment="./Output/$sample_name/Cleanup"
     final_attachment="./Output/$sample_name/Final"
@@ -47,11 +51,10 @@ do
 
     # Run scrips now
     cleanup_start_time=$(date +%s.%N)
-    python3 ./src/TRIMMING_AND_CONSENSUS.py $forward $reverse $1 $2 $cleanup_attachment $final_attachment $blast_attachment
+    python3 ./src/TRIMMING_AND_CONSENSUS.py $forward $reverse $window_size $quality_threshold $cleanup_attachment $final_attachment $blast_attachment
     cleanup_end_time=$(date +%s.%N)
-    #blastn -query $1 -db ./database/unite/unite_its_database -out $2 -outfmt 5
     BLAST_start_time=$(date +%s.%N)
-    python3 ./src/BLAST_AND_TAXONOMY.py ./Output/$sample_name/BLAST/$consensus_name $3 $4 $cleanup_attachment $final_attachment $blast_attachment $comparison_attachment
+    python3 ./src/BLAST_AND_TAXONOMY.py ./Output/$sample_name/BLAST/$consensus_name $taxonomy_mode $database_mode $e_value_threshold $identity_threshold $coverage_threshold $final_attachment $blast_attachment $comparison_attachment
     BLAST_end_time=$(date +%s.%N)
 
     # Timing report printing

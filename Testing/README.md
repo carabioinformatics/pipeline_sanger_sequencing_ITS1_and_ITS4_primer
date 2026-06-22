@@ -8,6 +8,37 @@ Process Sanger sequence data of the ITS region from fungal samples to identify w
 Sample preparation and processing: 
 Samples were collected from different Ostrich farms and egg incubation rooms and were then cultured so that fungal species could grow. The samples underwent DNA extraction and then a PCR reaction using ITS1 (forward) and ITS4 (reverse) primers to confirm that fungal DNA can be found in the sample. If there was positive amplification, the PCR reaction is repeated. The PCR product of about 600 bp is purified and then sent to CAF Stellenbosch Campus for Sanger sequencing. 
 
+########### Download requirements #################
+- Python 3.10 worked best for me
+- Biopython (pip install biopython)
+- Miniconda (https://www.anaconda.com/docs/getting-started/miniconda/install/windows-gui-install)
+- ClustalO ()
+- UNITE full fasta file: https://doi.plutof.ut.ee/doi/10.15156/BIO/3301230
+[old, doesn't contain taxonomy information - UNITE2024ITS.fasta file fingerprint: md5:a2deecb84d0f322a7cde137a1c8c67f3]
+For updating UNITE database: 
+(Replaces all old database files with updated ones. Code can run normally again)
+    - Download the new FASTA
+    - Run this in the bash file:
+    makeblastdb \
+        -in new_unite_release.fasta \
+        -dbtype nucl \
+        -out unite_its_database
+
+############### Database structure #################
+- In terminal, outside conda, execute
+    mkdir -p ~/databases/unite
+    cd ~/databases/unite
+    Download the UNITE FASTA file into this directory
+    Run ./build_databash.sh script only at the start to build database
+- Structure after building
+~/databases/unite/
+|
+|-- unite2024ITS.fasta
+|-- unite_its.nhr
+|-- unite_its.nin
+|-- unite_its.nsq
+|-- ...
+
 ############# Directory structure ############
 ~/pipeline_sanger_sequencing_ITS1_and_ITS4_primer/
 |
@@ -40,46 +71,26 @@ Testing/
 - If running for the first time
     ./build_database.sh
 - For every time: 
-    ./run.sh window_size quality_threshold_for_trimming taxonomy_mode e_value_threshold
-    What I usually use: ./run.sh 5 20 0 1e-15
+    ./run.sh taxonomy_mode database_mode
+    What I usually use: ./run.sh 1 0
 - What each parameter of ./run.sh means
-    Window size:
-        This is used when trimming the raw sequences. The raw sequences is split into windows with this size. The average phred score of this window is taken. This this average score is not good, then this region is considered for trimming. This is more accurate than looking at individual nucleotide phred scores.
-    Quality threshold for trimming:
-        Above what threshold the phred score should be to not be trimmed off.
     Taxonomy mode:
         Mode 0: Does complete BLASTn search and makes a summary of the results.
         Mode 1: Does a complete BLASTn search and makes a summary of the results. But also then counts how many hits were found for each species.
-    E-value threshold:
-        Instead of downloading the entire results list for a BLASTn search, only searches with a lower E-value than the threshold is saved in this report.
+    Database mode:
+        Mode 0: Do a BLASTn search on the NCBI and UNITE database.
+        Mode 1: Do a BLASTn search only on NCBI database.
+        Mode 2: Do a BLASTn search only on UNITE database.
 
-########### Download requirements #################
-- Python 3.10 worked best for me
-- Biopython (pip install biopython)
-- Miniconda (https://www.anaconda.com/docs/getting-started/miniconda/install/windows-gui-install)
-- ClustalO ()
-- UNITE full fasta file: https://doi.plutof.ut.ee/doi/10.15156/BIO/3301230
-[old, doesn't contain taxonomy information - UNITE2024ITS.fasta file fingerprint: md5:a2deecb84d0f322a7cde137a1c8c67f3]
-For updating UNITE database: 
-(Replaces all old database files with updated ones. Code can run normally again)
-    - Download the new FASTA
-    - Run this in the bash file:
-    makeblastdb \
-        -in new_unite_release.fasta \
-        -dbtype nucl \
-        -out unite_its_database
-
-############### Database structure #################
-- In terminal, outside conda, execute
-    mkdir -p ~/databases/unite
-    cd ~/databases/unite
-    Download the UNITE FASTA file into this directory
-    Run ./build_databash.sh script only at the start to build database
-- Structure after building
-~/databases/unite/
-|
-|-- unite2024ITS.fasta
-|-- unite_its.nhr
-|-- unite_its.nin
-|-- unite_its.nsq
-|-- ...
+################ ./run.sh Variables ##################
+These variables can be changed to make more conservative trimming to raw data or filtering of potential search hits. 
+Window size: (standard: 5)
+    This is used when trimming the raw sequences. The raw sequences is split into windows with this size. The average phred score of this window is taken. This this average score is not good, then this region is considered for trimming. This is more accurate than looking at individual nucleotide phred scores.
+Quality threshold for trimming:(standard: 20)
+    Above what threshold the phred score should be to not be trimmed off.
+E-value threshold: (standard: 1e-15)
+    Instead of downloading the entire results list for a BLASTn search, only searches with a lower E-value than the threshold is saved in this report.
+Identity threshold (%): (standard: 70)
+    Once all BLASTn results are compiled, the hits are filtered using an identity threshold to summarise the most likely hits.
+Coverage threshold (%): (standard: 70)
+    Once all BLASTn results are compiled, the hits are filtered using an coverage threshold to summarise the most likely hits. 

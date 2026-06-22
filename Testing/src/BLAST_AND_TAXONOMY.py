@@ -80,14 +80,16 @@ def main():
     start_time = time.perf_counter()
     ################### Arguments initialisation ##############################
     s_input_file = sys.argv[1]
-    i_mode = int(sys.argv[2])
-    f_e_value_threshold = float(sys.argv[3])
+    taxonomy_mode = int(sys.argv[2])
+    database_mode = int(sys.argv[3])
+    f_e_value_threshold = float(sys.argv[4])
+    identity_threshold = float(sys.argv[5])
+    coverage_threshold = float(sys.argv[6])
     if (f_e_value_threshold == None):
         f_e_value_threshold = 0.001
-    cleanup_directory_extension = sys.argv[4]
-    final_directory_extension = sys.argv[5]
-    blast_directory_extension = sys.argv[6]
-    comparison_directory_extension = sys.argv[7]
+    final_directory_extension = sys.argv[7]
+    blast_directory_extension = sys.argv[8]
+    comparison_directory_extension = sys.argv[9]
     ######################### Starting values #################################
     i_name_start = 0
     i_name_end = 0
@@ -126,13 +128,16 @@ def main():
         #     std_error.write("Invalid starting file argument. Does not follow structure of INT26_{}_CONSENSUS.fas")
         # std_error.close()
     ################### Perform BLAST on different databases ##################
-    ncbi_start_time = time.perf_counter()
-    arr_hits_ncbi = []
-    arr_hits_ncbi = ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_counter_ncbi, f_e_value_threshold, i_mode)
-    ncbi_end_time = time.perf_counter()
-    unite_start_time = time.perf_counter()
-    arr_hits_unite = unite(s_input_file, s_blast_summary_unite, s_blast_complete_unite, s_taxonomy_counter_unite, f_e_value_threshold, i_mode)
-    unite_end_time = time.perf_counter()
+    if (database_mode != 2):
+        ncbi_start_time = time.perf_counter()
+        arr_hits_ncbi = []
+        arr_hits_ncbi = ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_counter_ncbi, f_e_value_threshold, taxonomy_mode)
+        ncbi_end_time = time.perf_counter()
+    if (database_mode != 1):
+        unite_start_time = time.perf_counter()
+        arr_hits_unite = []
+        arr_hits_unite = unite(s_input_file, s_blast_summary_unite, s_blast_complete_unite, s_taxonomy_counter_unite, f_e_value_threshold, taxonomy_mode)
+        unite_end_time = time.perf_counter()
     #################### Make performance report ###############################
     end_time = time.perf_counter()
     with open(s_performance_report, "a") as performance_output:
@@ -142,8 +147,11 @@ def main():
         performance_output.write(f"Elapsed time for NCBI search: \t{ncbi_end_time-ncbi_start_time:.2f} seconds\n")
         performance_output.write(f"Elapsed time for UNITE search: \t{unite_end_time-unite_start_time:.2f} seconds\n")
         performance_output.write("Input file received: " + s_input_file + "\n")
-        performance_output.write("Mode chosen: " + str(i_mode) + "\n")
+        performance_output.write("Taxonomy mode chosen: " + str(taxonomy_mode) + "\n")
+        performance_output.write("Database mode chosen: " + str(database_mode) + "\n")
         performance_output.write(f"E-value threshold: E-value < {f_e_value_threshold:.4f} \n")
+        performance_output.write(f"Identity threshold (%): Identities % > {identity_threshold:.4f} \n")
+        performance_output.write(f"Coverage threshold (%): Coverage % > {coverage_threshold:.4f} \n")
         performance_output.write("------------------------------ BLASTn report -------------------------------\n")
         #performance_output.write("Computer where search was run: " + socket.gethostbyname())
     performance_output.close()
@@ -153,7 +161,7 @@ def main():
     # comparison(comparison_start_time, s_comparison_report, arr_hits_ncbi, arr_hits_unite, f_e_value_threshold)
     # print("CL: End comparison between databases.")
 
-def ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_counter_ncbi, f_e_value_threshold, i_mode):
+def ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_counter_ncbi, f_e_value_threshold, taxonomy_mode):
     """
         This method handles all computation related to BLASTn searching on the NCBI database. First does a 
         blastn search and then builds up a summary report that can report the taxonomy found in the search.
@@ -204,7 +212,7 @@ def ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_c
                                 #print("Additional")
                                 #TODO, don't think this will update the array, only the obj
                                 add_additional_entry(obj_hit, hsp.bits, (hsp.align_length/record.query_length) * 100, (hsp.identities/hsp.align_length)*100)
-                            if (i_mode == 1):
+                            if (taxonomy_mode == 1):
                                 counter += 1
                                 table_tax_count = get_taxonomy_count_ncbi_without_entrez(table_tax_count, species)
                                 # table_tax_count = get_taxonomy_count_ncbi(table_tax_count, taxonomy)
@@ -213,7 +221,7 @@ def ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_c
     ####################### Sort species with counts #################################
     sorted_table_tax_count = dict(sorted(table_tax_count.items(), key = lambda x: x[1], reverse=True))
     ################### Print NCBI taxonomy counter report ##########################
-    if (i_mode == 1):
+    if (taxonomy_mode == 1):
         with open(s_taxonomy_counter_ncbi, "w") as taxonomy_counter_output:
             taxonomy_counter_output.write("Species name\t\t\t\t\tCount of species hit\t\t'%'of " + str(counter) +" hits for species\n")
             for key, value in sorted_table_tax_count.items():
@@ -226,7 +234,7 @@ def ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_c
     #         print(arr_hits_ncbi[a].get_bit_score(y))
     return arr_hits_ncbi
         
-def unite(s_input_file, s_blast_summary_unite, s_blast_complete_unite, s_taxonomy_counter_unite, f_e_value_threshold, i_mode):
+def unite(s_input_file, s_blast_summary_unite, s_blast_complete_unite, s_taxonomy_counter_unite, f_e_value_threshold, taxonomy_mode):
     """
         This method handles all computation related to BLASTn searching on the locally downloaded UNITE database. 
         First does a blastn search on the local database and then builds up a summary report that can report the 
@@ -262,7 +270,7 @@ def unite(s_input_file, s_blast_summary_unite, s_blast_complete_unite, s_taxonom
                             else:
                                 #TODO, don't think this will update the array, only the obj
                                 add_additional_entry(obj_hit, hsp.bits, (hsp.align_length/record.query_length) * 100, (hsp.identities/hsp.align_length) * 100)
-                            if (i_mode == 1):
+                            if (taxonomy_mode == 1):
                                 counter += 1
                                 table_tax_count = get_taxonomy_count_unite(table_tax_count, species)
     summary_out.close()
@@ -274,7 +282,7 @@ def unite(s_input_file, s_blast_summary_unite, s_blast_complete_unite, s_taxonom
     ####################### Sort species with counts #################################
     sorted_table_tax_count = dict(sorted(table_tax_count.items(), key = lambda x: x[1], reverse=True))
     ################### Print UNITE taxonomy counter report ##########################
-    if (i_mode == 1):
+    if (taxonomy_mode == 1):
         with open(s_taxonomy_counter_unite, "w") as taxonomy_counter_output:
             taxonomy_counter_output.write("Species name\t\t\t\t\tCount of species hit\t\t'%'of " + str(counter) + " hits for species\n")
             for key, value in sorted_table_tax_count.items():

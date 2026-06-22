@@ -517,7 +517,8 @@ def find_hit_obj_in_arr(arr_hits, species):
 def comparison(s_comparison_report, s_comparison_graph, arr_hits_ncbi, arr_hits_unite, f_e_value_threshold):
     """
         This method is used to compare the hit results between the different databases. It compares the scores
-        for each species from each database. The average scores for each species is written to a .txt file.
+        for each species from each database. The average scores for each species found in either database is written 
+        to a .txt file if the average score is more than 0.5 (50%).
     """
     total_score_dict = {}
     with open(s_comparison_report, "w") as comparison_output:
@@ -526,8 +527,6 @@ def comparison(s_comparison_report, s_comparison_graph, arr_hits_ncbi, arr_hits_
             for t in range(len(arr_hits_unite)):
                 arr_score = []
                 if (arr_hits_unite[t].get_species() == arr_hits_ncbi[b].get_species()):
-                    print("NCBI sub: " + arr_hits_ncbi[b].get_species() + " : " + str(arr_hits_ncbi[b].get_num_hits()))
-                    print("UNITE sub: " + arr_hits_unite[b].get_species() + " : " + str(arr_hits_unite[b].get_num_hits()))
                     ncbi_score = arr_hits_ncbi[b].get_average_score()
                     unite_score = arr_hits_unite[t].get_average_score()
                     total_score = (ncbi_score + unite_score)/2
@@ -535,7 +534,23 @@ def comparison(s_comparison_report, s_comparison_graph, arr_hits_ncbi, arr_hits_
                     arr_score = [ncbi_score, unite_score, total_score]
                     if (arr_hits_ncbi[b].get_species()) not in total_score_dict:
                         total_score_dict.update({arr_hits_ncbi[b].get_species(): arr_score})
-                # what happens to hits that don't correlate?
+                else:
+                    if (arr_hits_ncbi[b].get_species()) not in total_score_dict:
+                        ncbi_score = arr_hits_ncbi[b].get_average_score()
+                        unite_score = 0
+                        total_score = ncbi_score/2
+                        if (total_score > 0.5):
+                            comparison_output.write(f"{arr_hits_ncbi[b].get_species()}\t{ncbi_score:.4f}\t{unite_score:.4f}\t{total_score:.4f}\n")
+                            arr_score = [ncbi_score, unite_score, total_score]
+                            total_score_dict.update({arr_hits_ncbi[b].get_species(): arr_score})
+                    if (arr_hits_unite[t].get_species()) not in total_score_dict:
+                        ncbi_score = 0
+                        unite_score = arr_hits_unite[t].get_average_score()
+                        total_score = unite_score/2
+                        if (total_score > 0.5):
+                            comparison_output.write(f"{arr_hits_ncbi[b].get_species()}\t{ncbi_score:.4f}\t{unite_score:.4f}\t{total_score:.4f}\n")
+                            arr_score = [ncbi_score, unite_score, total_score]
+                            total_score_dict.update({arr_hits_ncbi[b].get_species(): arr_score})
     comparison_output.close()
     comparison_plotting(total_score_dict, s_comparison_graph)
 

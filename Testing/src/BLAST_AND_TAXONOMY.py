@@ -124,6 +124,7 @@ def main():
         s_blast_summary_ncbi = final_directory_extension + "/INT26_" + s_file_identifier + "_BLAST_SUMMARY_NCBI.txt"
         s_blast_complete_unite = blast_directory_extension + "/INT26_" + s_file_identifier + "_BLAST_COMPLETE_UNITE.xml"
         s_blast_summary_unite = final_directory_extension + "/INT26_" + s_file_identifier + "_BLAST_SUMMARY_UNITE.txt"
+        s_secondary_database_ncbi = final_directory_extension + "/INT26_" + s_file_identifier + "_REFSEQ_HITS.txt"
         s_taxonomy_counter_ncbi = final_directory_extension + "/INT26_" + s_file_identifier + "_TAXONOMY_COUNTER_NCBI.xml"
         s_taxonomy_counter_unite = final_directory_extension + "/INT26_" + s_file_identifier + "_TAXONOMY_COUNTER_UNITE.xml"
         s_performance_report = final_directory_extension + "/INT26_" + s_file_identifier + "_PERFORMANCE_REPORT.txt"
@@ -139,7 +140,7 @@ def main():
     total_unite_hits = 0
     if (database_mode != 2):
         ncbi_start_time = time.perf_counter()
-        arr_hits_ncbi, total_ncbi_hits = ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_counter_ncbi, f_e_value_threshold, identity_threshold, coverage_threshold, taxonomy_mode)
+        arr_hits_ncbi, total_ncbi_hits = ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_counter_ncbi, s_secondary_database_ncbi, f_e_value_threshold, identity_threshold, coverage_threshold, taxonomy_mode)
         ncbi_end_time = time.perf_counter()
     if (database_mode != 1):
         unite_start_time = time.perf_counter()
@@ -156,7 +157,7 @@ def main():
         performance_output.write("Input file received: " + s_input_file + "\n")
         performance_output.write("Taxonomy mode chosen: " + str(taxonomy_mode) + "\n")
         performance_output.write("Database mode chosen: " + str(database_mode) + "\n")
-        performance_output.write(f"E-value threshold: E-value < {f_e_value_threshold:.4f} \n")
+        performance_output.write(f"E-value threshold: E-value < {f_e_value_threshold:.20f} \n")
         performance_output.write(f"Identity threshold (%): Identities % > {identity_threshold:.4f} \n")
         performance_output.write(f"Coverage threshold (%): Coverage % > {coverage_threshold:.4f} \n")
         performance_output.write("------------------------------ BLASTn report -------------------------------\n")
@@ -174,13 +175,13 @@ def main():
         performance_output.write("------------------------------ Comparison report -------------------------------\n")
         performance_output.write(f"Date and time of comparison end:\t{datetime.now():%Y-%m-%d %H:%M}\n")
         performance_output.write(f"Elapsed time for total comparison: \t{comparison_end_time-comparison_start_time:.2f} seconds\n")
-        performance_output.write("Comparison data saved to: " + s_comparison_report)
-        performance_output.write("Comparison graph saved to: " + s_comparison_graph)
+        performance_output.write("Comparison data saved to: " + s_comparison_report + "\n")
+        performance_output.write("Comparison graph saved to: " + s_comparison_graph + "\n")
         performance_output.write("------------------------------ Comparison report -------------------------------\n")
     performance_output.close()
     print("CL: End comparison between databases.")
 
-def ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_counter_ncbi, f_e_value_threshold, identity_threshold, coverage_threshold, taxonomy_mode):
+def ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_counter_ncbi, s_secondary_database_ncbi, f_e_value_threshold, identity_threshold, coverage_threshold, taxonomy_mode):
     """
         This method handles all computation related to BLASTn searching on the NCBI database. First does a 
         blastn search and then builds up a summary report that can report the taxonomy found in the search.
@@ -206,7 +207,16 @@ def ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_c
                                 summary_out.write(f"E-value: {hsp.expect}\n")
                             else: 
                                 print("taxonomy == NONE")
-                            
+
+                            if "_" in alignment.accession:
+                                print("CL: NCBI hit from secondary database found.")
+                                with open(s_secondary_database_ncbi, "a") as secondary_database_output:
+                                    secondary_database_output.write(f"Accession: {alignment.accession}\t\t")
+                                    secondary_database_output.write(f"Species: {species}\t\t\t\t")
+                                    secondary_database_output.write(f"E-value: {hsp.expect}\t\t")
+                                    secondary_database_output.write(f"%Identity: {((hsp.identities/hsp.align_length)*100)}\t\t")
+                                    secondary_database_output.write(f"%Coverage: {((hsp.align_length/record.query_length) * 100)}\n")
+                                secondary_database_output.close()
                             # accession = alignment.accession
                             # tax_record = get_taxonomy_ncbi(accession)
                             # taxonomy = parse_taxonomy_ncbi(tax_record)

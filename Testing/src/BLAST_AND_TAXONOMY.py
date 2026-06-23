@@ -191,7 +191,7 @@ def ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_c
     counter = 0
     arr_hits_ncbi = []
     obj_hit = None
-    #blastn_ncbi(s_input_file, s_blast_complete_ncbi, f_e_value_threshold)
+    blastn_ncbi(s_input_file, s_blast_complete_ncbi, f_e_value_threshold)
     ############ Make summary of BLASTn report using NCBI DATABASE #########
     with open(s_blast_summary_ncbi, "w") as summary_out:
         with open(s_blast_complete_ncbi) as result_handle:
@@ -214,8 +214,8 @@ def ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_c
                                     secondary_database_output.write(f"Accession: {alignment.accession}\t\t")
                                     secondary_database_output.write(f"Species: {species}\t\t\t\t")
                                     secondary_database_output.write(f"E-value: {hsp.expect}\t\t")
-                                    secondary_database_output.write(f"%Identity: {((hsp.identities/hsp.align_length)*100)}\t\t")
-                                    secondary_database_output.write(f"%Coverage: {((hsp.align_length/record.query_length) * 100)}\n")
+                                    secondary_database_output.write(f"%Identity: {((hsp.identities/hsp.align_length)*100):.4f}\t\t")
+                                    secondary_database_output.write(f"%Coverage: {((hsp.align_length/record.query_length) * 100):.4f}\n")
                                 secondary_database_output.close()
                             # accession = alignment.accession
                             # tax_record = get_taxonomy_ncbi(accession)
@@ -262,7 +262,7 @@ def unite(s_input_file, s_blast_summary_unite, s_blast_complete_unite, s_taxonom
         taxonomy found in the search.
     """
     print("CL: Start with BLASTn summary for UNITE.")
-    #blastn_unite(s_input_file, s_blast_complete_unite)
+    blastn_unite(s_input_file, s_blast_complete_unite)
     table_tax_count = {}
     counter = 0
     arr_hits_unite = []

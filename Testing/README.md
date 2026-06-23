@@ -94,3 +94,22 @@ Identity threshold (%): (standard: 70)
     Once all BLASTn results are compiled, the hits are filtered using an identity threshold to summarise the most likely hits.
 Coverage threshold (%): (standard: 70)
     Once all BLASTn results are compiled, the hits are filtered using an coverage threshold to summarise the most likely hits. 
+
+################## How to interpret results ####################
+Each sample received as input gets its own output directory.
+The ./Cleanup directory is used to store a copy of each step to later reference. 
+
+The ./BLAST directory is used to store the consensus sequence used during 
+the BLAST search and the complete search hit results for each database. This can be used when users want to complete their own BLASTn search using the website and compare results.
+
+The ./Final directory is used to store any summaries and performance reports that are most important for users to quickly understand the results from the pipeline. This includes a performance report of what parameters were used for the pipeline and how long each component took. This also includes a search hit summary for each database after it has been filtered with thresholds. And lastly it includes a taxonomy counter document listing all the species found in the BLASTn search and how many times species has a hit. This directory could possibly also contain a list of specific BLASTn hit records. If any hits during the search was found that was from a Refseq database (secondary compiled database), then this is specifically added to this .txt file. 
+
+The ./Comparison directory provides the quickest way to view the results from pipeline. It provides a .txt document containing all the species that were found in both database's BLASTn searches, if both databases were searched. A score for each hit found was also previously calculated, and the average of this score is then also saved to this file. The data from this file is used to plot a graph. This can be used to visually see all the top matches for the unknown sample. 
+
+The ./Output directory also contains a time report containing the execution time of all the different parts of the samples in the pipeline. This data is visually presented with a bar graph saved here as well. This graph can be used to quickly identity samples that had an execution time that was longer than expected. These samples can then be regarded as difficult samples, and might require further manual inspection.
+
+################ Order in which to interpret output #######################
+1) Look at the time report and time report graph. Identify any samples that had longer execution time and identify which part of the pipeline took long to execute. If any samples are identified, these should be noted to inspect manually or closer.
+2) Go to the individual sample output directories for all the samples that had "normal" execution times. Look at each samples comparison graph. The species with the highest score (0 - 1) together with the most hit percentage (0 - 100%; the number in brackets), is mostly likely the best species fit for the unknown sample.
+3) Check if any RefSeq hits were found during the search. This type of hit could be a good indication of that species being a good match. 
+4) If the results from the comparison graph does not give a fitting conclusion, then the BLAST summaries and taxonomy counters in the ./Final directory can be referenced. 

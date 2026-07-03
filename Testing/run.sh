@@ -11,7 +11,10 @@ quality_threshold=20
 e_value_threshold=1e-15
 identity_threshold=70
 coverage_threshold=70
+timeout=200
 
+pipeline_report="./Output/INT26_PIPELINE_REPORT.txt"
+echo -e "Pipeline started" > "$pipeline_report"
 timing_report="./Output/INT26_TIME_REPORT.txt"
 echo -e "Sample name\tCleanup time (s)\tBLAST time (s)\tTotal time (s)" > "$timing_report"
 
@@ -35,7 +38,8 @@ do
 
     # Check if reverse file exists
     if [[ -z "$reverse" ]]; then
-        echo "Error: Reverse file not found for $sample_name."
+        echo -e "--$sample_name terminated." > "$pipeline_report"
+        echo -e "Error: Reverse file not found for $sample_name." > "$pipeline_report"
         continue
     fi
 
@@ -49,13 +53,23 @@ do
     final_attachment="./Output/$sample_name/Final"
     comparison_attachment="./Output/$sample_name/Comparison"
 
+    #TODO while loop????
+    temp_end_time=$(date +%s.%N)
+    temp_time=$(awk "BEGIN {print $temp_end_time - $total_start_time}")
     # Run scrips now
     cleanup_start_time=$(date +%s.%N)
     python3 ./src/TRIMMING_AND_CONSENSUS.py $forward $reverse $window_size $quality_threshold $cleanup_attachment $final_attachment $blast_attachment
     cleanup_end_time=$(date +%s.%N)
+    #if too much trimmed???
+    # echo -e "--$sample_name terminated." > "$pipeline_report"
+    # echo -e "Error: Too large amount of original read was trimmed. Should manually check this sample." > "$pipeline_report"
+    
     BLAST_start_time=$(date +%s.%N)
     python3 ./src/BLAST_AND_TAXONOMY.py ./Output/$sample_name/BLAST/$consensus_name $taxonomy_mode $database_mode $e_value_threshold $identity_threshold $coverage_threshold $final_attachment $blast_attachment $comparison_attachment
     BLAST_end_time=$(date +%s.%N)
+    #if no hits were found with desired thresholds
+    # echo -e "--$sample_name unsuccessful." > "$pipeline_report"
+    # echo -e "Requires attention: No BLAST hits were found following required thresholds." > "$pipeline_report"
 
     # Timing report printing
     cleanup_time=$(awk "BEGIN {print $cleanup_end_time - $cleanup_start_time}")
@@ -64,12 +78,22 @@ do
     total_time=$(awk "BEGIN {print $total_end_time - $total_start_time}")
     echo -e "$sample_name\t$cleanup_time\t$BLAST_time\t$total_time" >> "$timing_report"
 
+    #TODO??????
+    if (total_time<timeout); then
+        echo -e "--$sample_name terminated." > "$pipeline_report"
+        echo -e "Error: Reached the timeout limit of $timeout seconds." > "$pipeline_report"
+    fi
+    else;
+        echo -e "--$sample_name complete" > "$pipeline_report"
+    
     # Ending
     echo "$sample_name complete!"
     echo "================================================="
 done
 
+echo -e "Pipeline ended" > "$pipeline_report"
 echo "Pipeline finished"
+
 python3 ./src/TIME_REPORT_PLOTTING.py $timing_report
 echo "================================================="
 echo "End main run script"

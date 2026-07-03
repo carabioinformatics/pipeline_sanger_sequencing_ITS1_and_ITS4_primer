@@ -10,6 +10,7 @@ import REVERSE_COMPLEMENT_AND_ALIGNMENT
 ############ TODO ################
 #TODO If alignment is of low quality, then shouldn't continue to trimming
 #TODO Extra input arguments
+#TODO Main returns a value to determine if pipeline was successful and should continue
 def main():
     """
         Take alignment file, make a consensus sequence, and trim all low quality regions.
@@ -50,9 +51,12 @@ def main():
     # quality_threshold = 20 #Could go up to 30 for stricter trimming; 20 standard
     forward_record = SeqIO.read(s_forward_file, "abi")
     reverse_record = SeqIO.read(s_reverse_file, "abi")
+    initial_forward_length = len(forward_record.seq)
+    initial_reverse_length = len(reverse_record.seq)
     sliding_window_trim(s_forward_trim_output_fastq, s_forward_trim_output_fasta, forward_record, window_size, quality_threshold)
     sliding_window_trim(s_reverse_trim_output_fastq, s_reverse_trim_output_fasta, reverse_record, window_size, quality_threshold)
     print("CL: Trimming complete.")
+    #TODO GET length after trim
     ################ Get reverse complement of reverse sequence ################
     REVERSE_COMPLEMENT_AND_ALIGNMENT.get_reverse_complement_fastq(s_reverse_trim_output_fastq, s_reverse_complement_output_file_fastq)
     REVERSE_COMPLEMENT_AND_ALIGNMENT.get_reverse_complement_fasta(s_reverse_trim_output_fasta, s_reverse_complement_output_file_fasta)
@@ -69,6 +73,7 @@ def main():
         id = s_sample_name,
         description = "consensus"
     )
+    consensus_length = len(consensus_sequence)
     SeqIO.write(consensus_record, s_consensus_file, "fasta")
     print("CL: Consensus completed.")
     ####################### Performance report #################################
@@ -82,6 +87,13 @@ def main():
         performance_output.write("Input file used for reverse: " + s_reverse_file + "\n")
         performance_output.write("Window size used for sliding window trim: " + str(window_size) +"\n")
         performance_output.write("Quality threshold used for trimming: "+ str(quality_threshold) + "\n")
+        performance_output.write("Length of forward sequence initially: " + str(initial_forward_length) + "\n")
+        performance_output.write("Length of reverse sequence initially: " + str(initial_reverse_length) + "\t")
+        performance_output.write("Length of forward sequence after trim: " + "\n")
+        performance_output.write("Length of reverse sequence after trim: " + "\n")
+        performance_output.write("'%' Forward sequence remaining: " + str(initial_forward_length) + "\n")
+        performance_output.write("'%' Reverse sequence remaining: " + str(initial_reverse_length) + "\n")
+        performance_output.write("Length of consensus sequence: " + str(consensus_length) + "\n")
         performance_output.write("--------------------- Trimming, alignment and consensus ---------------------\n")
     performance_output.close()
     print("CL: Trimming and consensus ending.")

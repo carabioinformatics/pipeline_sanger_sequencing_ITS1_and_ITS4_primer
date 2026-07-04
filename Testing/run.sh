@@ -11,7 +11,7 @@ quality_threshold=20
 e_value_threshold=1e-15
 identity_threshold=70
 coverage_threshold=70
-timeout=200
+time_limit=200
 
 pipeline_report="./Output/INT26_PIPELINE_REPORT.txt"
 echo -e "Pipeline started" > "$pipeline_report"
@@ -38,8 +38,8 @@ do
 
     # Check if reverse file exists
     if [[ -z "$reverse" ]]; then
-        echo -e "--$sample_name terminated." > "$pipeline_report"
-        echo -e "Error: Reverse file not found for $sample_name." > "$pipeline_report"
+        echo -e "--$sample_name terminated." >> "$pipeline_report"
+        echo -e "Error: Reverse read file not found for $sample_name." >> "$pipeline_report"
         continue
     fi
 
@@ -52,24 +52,79 @@ do
     cleanup_attachment="./Output/$sample_name/Cleanup"
     final_attachment="./Output/$sample_name/Final"
     comparison_attachment="./Output/$sample_name/Comparison"
-
-    #TODO while loop????
-    temp_end_time=$(date +%s.%N)
-    temp_time=$(awk "BEGIN {print $temp_end_time - $total_start_time}")
-    # Run scrips now
-    cleanup_start_time=$(date +%s.%N)
-    python3 ./src/TRIMMING_AND_CONSENSUS.py $forward $reverse $window_size $quality_threshold $cleanup_attachment $final_attachment $blast_attachment
-    cleanup_end_time=$(date +%s.%N)
-    #if too much trimmed???
-    # echo -e "--$sample_name terminated." > "$pipeline_report"
-    # echo -e "Error: Too large amount of original read was trimmed. Should manually check this sample." > "$pipeline_report"
     
+    echo -e "-$sample_name start" >> "$pipeline_report"
+    
+    # Run trimming script
+    cleanup_start_time=$(date +%s.%N)
+    timeout "$time_limit" python3 ./src/TRIMMING_AND_CONSENSUS.py $forward $reverse $window_size $quality_threshold $cleanup_attachment $final_attachment $blast_attachment
+    trimming_return_code=$?
+    cleanup_end_time=$(date +%s.%N)
+    
+    case $trimming_return_code in 
+        0)
+            # Successful trimming of sample
+            echo -e "---$sample_name Trimming and consensus successful." >> "$pipeline_report"
+            ;;
+        1)
+            # No input file found
+            echo -e "---$sample_name terminated." >> "$pipeline_report"
+            echo -e "Error: Invalid starting file argument." >> "$pipeline_report"
+            continue
+            ;;
+        2) 
+            # Chosen error code for unsuccessful trimming
+            echo -e "---$sample_name terminated." >> "$pipeline_report"
+            echo -e "Error: Too large amount of original read was trimmed. Should manually check this sample." >> "$pipeline_report"
+            continue
+            ;;
+        124)
+            # Timeout error code
+            echo -e "---$sample_name terminated." >> "$pipeline_report"
+            echo -e "Error: Trimming and consensus timed out after ${time_limit} seconds" >> "$pipeline_report"
+            continue
+            ;;
+        *)
+            echo -e "---$sample_name terminated." >> "$pipeline_report"
+            echo -e "Error: Unknown exit code for $sample_name" >> "$pipeline_report"
+            continue
+            ;;
+    esac
+    
+    # Run BLAST script
     BLAST_start_time=$(date +%s.%N)
-    python3 ./src/BLAST_AND_TAXONOMY.py ./Output/$sample_name/BLAST/$consensus_name $taxonomy_mode $database_mode $e_value_threshold $identity_threshold $coverage_threshold $final_attachment $blast_attachment $comparison_attachment
+    timeout "$time_limit" python3 ./src/BLAST_AND_TAXONOMY.py ./Output/$sample_name/BLAST/$consensus_name $taxonomy_mode $database_mode $e_value_threshold $identity_threshold $coverage_threshold $final_attachment $blast_attachment $comparison_attachment
+    blast_return_code=$?
     BLAST_end_time=$(date +%s.%N)
-    #if no hits were found with desired thresholds
-    # echo -e "--$sample_name unsuccessful." > "$pipeline_report"
-    # echo -e "Requires attention: No BLAST hits were found following required thresholds." > "$pipeline_report"
+
+    case $blast_return_code in
+        0)
+            # Successful BLAST search
+            echo -e "---$sample_name BLAST successful." >> "$pipeline_report"
+            ;;
+        1)
+            # Error code for incorrect input file
+            echo -e "---$sample_name terminated." >> "$pipeline_report"
+            echo -e "Error: Invalid starting file argument." > "$pipeline_report"
+            continue
+            ;;
+        2)
+            # Chosen error code for unsuccessful search
+            echo -e "---$sample_name unsuccessful." >> "$pipeline_report"
+            echo -e "Requires attention: No BLAST hits were found following required thresholds." > "$pipeline_report"
+            ;;
+        124)
+            # Timeout error code
+            echo -e "---$sample_name terminated." >> "$pipeline_report"
+            echo -e "Error: BLAST timed out after ${time_limit} seconds" >> "$pipeline_report"
+            continue
+            ;;
+        *)
+            echo -e "---$sample_name terminated." >> "$pipeline_report"
+            echo -e "Error: Unknown exit code for $sample_name" >> "$pipeline_report"
+            continue
+            ;;
+    esac
 
     # Timing report printing
     cleanup_time=$(awk "BEGIN {print $cleanup_end_time - $cleanup_start_time}")
@@ -78,20 +133,14 @@ do
     total_time=$(awk "BEGIN {print $total_end_time - $total_start_time}")
     echo -e "$sample_name\t$cleanup_time\t$BLAST_time\t$total_time" >> "$timing_report"
 
-    #TODO??????
-    if (total_time<timeout); then
-        echo -e "--$sample_name terminated." > "$pipeline_report"
-        echo -e "Error: Reached the timeout limit of $timeout seconds." > "$pipeline_report"
-    fi
-    else;
-        echo -e "--$sample_name complete" > "$pipeline_report"
+    echo -e "-$sample_name end" >> "$pipeline_report"
     
     # Ending
     echo "$sample_name complete!"
     echo "================================================="
 done
 
-echo -e "Pipeline ended" > "$pipeline_report"
+echo -e "Pipeline ended" >> "$pipeline_report"
 echo "Pipeline finished"
 
 python3 ./src/TIME_REPORT_PLOTTING.py $timing_report

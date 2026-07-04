@@ -45,7 +45,8 @@ def main():
         s_performance_report = final_directory_extension + "/INT26_" + s_sample_name + "_PERFORMANCE_REPORT.txt"
     else: 
         sys.stderr.write("Error: Invalid starting file argument. Does not follow structure of INT26_{}_ALIGNMENT.aln")
-        sys.exit()    
+        return 1
+        #sys.exit()    
     ############################# Trimming #####################################
     # window_size = 7 #between 5 - 10: good for short reads, 10-20 smoother, more conservative
     # quality_threshold = 20 #Could go up to 30 for stricter trimming; 20 standard
@@ -89,14 +90,18 @@ def main():
         performance_output.write("Quality threshold used for trimming: "+ str(quality_threshold) + "\n")
         performance_output.write("Length of forward sequence initially: " + str(initial_forward_length) + "\n")
         performance_output.write("Length of reverse sequence initially: " + str(initial_reverse_length) + "\t")
-        performance_output.write("Length of forward sequence after trim: " + "\n")
-        performance_output.write("Length of reverse sequence after trim: " + "\n")
+        performance_output.write("Length of forward sequence after trim: " + str(trimmmed_forward_length) + "\n")
+        performance_output.write("Length of reverse sequence after trim: " + str(trimmed_reverse_length) + "\n")
         performance_output.write("'%' Forward sequence remaining: " + str(initial_forward_length) + "\n")
         performance_output.write("'%' Reverse sequence remaining: " + str(initial_reverse_length) + "\n")
         performance_output.write("Length of consensus sequence: " + str(consensus_length) + "\n")
         performance_output.write("--------------------- Trimming, alignment and consensus ---------------------\n")
     performance_output.close()
     print("CL: Trimming and consensus ending.")
+    if ((initial_forward_length/trimmed_forward_length > 0.5) and (initial_reverse_length/trimmed_reverse_length) and (consensus_length > 500)):
+        return 0
+    else:
+        return 2
 
 def sliding_window_trim(s_output_fastq_file, s_output_fasta_file, cur_record, window_size, quality_threshold):
     """
@@ -202,4 +207,4 @@ def build_index_map(sequence):
 
     return index_map
 
-if __name__ == "__main__" : main()
+if __name__ == "__main__" : sys.exit(main())

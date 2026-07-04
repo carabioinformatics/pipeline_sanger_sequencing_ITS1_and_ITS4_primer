@@ -132,7 +132,8 @@ def main():
         s_comparison_graph = comparison_directory_extension + "/INT26_" + s_file_identifier + "_COMPARISON_GRAPH.png"
     else: 
         sys.stderr.write("Error: Invalid starting file argument. Does not follow structure of INT26_{}_CONSENSUS.fas\n")
-        sys.exit()
+        return 1
+        #sys.exit()
     ################### Perform BLAST on different databases ##################
     arr_hits_ncbi = []
     arr_hits_unite = []
@@ -180,6 +181,10 @@ def main():
         performance_output.write("------------------------------ Comparison report -------------------------------\n")
     performance_output.close()
     print("CL: End comparison between databases.")
+    if ((len(arr_hits_ncbi) == 0) and (len(arr_hits_unite) == 0)):
+        return 2
+    else:
+        return 0
 
 def ncbi(s_input_file, s_blast_summary_ncbi, s_blast_complete_ncbi, s_taxonomy_counter_ncbi, s_secondary_database_ncbi, f_e_value_threshold, identity_threshold, coverage_threshold, taxonomy_mode):
     """
@@ -637,4 +642,4 @@ def comparison_plotting(total_score_dict, s_comparison_graph):
     #plt.show()
     print("CL: End with plotting species score")
     
-if __name__ == "__main__" : main()
+if __name__ == "__main__" : sys.exit(main())

@@ -69,24 +69,24 @@ do
         1)
             # No input file found
             echo -e "---$sample_name terminated." >> "$pipeline_report"
-            echo -e "Error: Invalid starting file argument." >> "$pipeline_report"
+            echo -e "-----Error: Invalid starting file argument." >> "$pipeline_report"
             continue
             ;;
         2) 
             # Chosen error code for unsuccessful trimming
             echo -e "---$sample_name terminated." >> "$pipeline_report"
-            echo -e "Error: Too large amount of original read was trimmed. Should manually check this sample." >> "$pipeline_report"
+            echo -e "-----Error: Too large amount of original read was trimmed. Should manually check this sample." >> "$pipeline_report"
             continue
             ;;
         124)
             # Timeout error code
             echo -e "---$sample_name terminated." >> "$pipeline_report"
-            echo -e "Error: Trimming and consensus timed out after ${time_limit} seconds" >> "$pipeline_report"
+            echo -e "-----Error: Trimming and consensus timed out after ${time_limit} seconds" >> "$pipeline_report"
             continue
             ;;
         *)
             echo -e "---$sample_name terminated." >> "$pipeline_report"
-            echo -e "Error: Unknown exit code for $sample_name" >> "$pipeline_report"
+            echo -e "-----Error: Unknown exit code for $sample_name" >> "$pipeline_report"
             continue
             ;;
     esac
@@ -105,23 +105,23 @@ do
         1)
             # Error code for incorrect input file
             echo -e "---$sample_name terminated." >> "$pipeline_report"
-            echo -e "Error: Invalid starting file argument." > "$pipeline_report"
+            echo -e "-----Error: Invalid starting file argument." > "$pipeline_report"
             continue
             ;;
         2)
             # Chosen error code for unsuccessful search
             echo -e "---$sample_name unsuccessful." >> "$pipeline_report"
-            echo -e "Requires attention: No BLAST hits were found following required thresholds." > "$pipeline_report"
+            echo -e "-----Requires attention: No BLAST hits were found following required thresholds." > "$pipeline_report"
             ;;
         124)
             # Timeout error code
             echo -e "---$sample_name terminated." >> "$pipeline_report"
-            echo -e "Error: BLAST timed out after ${time_limit} seconds" >> "$pipeline_report"
+            echo -e "-----Error: BLAST timed out after ${time_limit} seconds" >> "$pipeline_report"
             continue
             ;;
         *)
             echo -e "---$sample_name terminated." >> "$pipeline_report"
-            echo -e "Error: Unknown exit code for $sample_name" >> "$pipeline_report"
+            echo -e "-----Error: Unknown exit code for $sample_name" >> "$pipeline_report"
             continue
             ;;
     esac

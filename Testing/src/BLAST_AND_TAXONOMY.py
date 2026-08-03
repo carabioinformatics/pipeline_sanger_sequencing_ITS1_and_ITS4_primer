@@ -599,43 +599,67 @@ def comparison_plotting(total_score_dict, s_comparison_graph):
     width = 0.25
 
     # Plot bar graph
-    figure, axes = plt.subplots(figsize=(10,6))
-    bar1 = axes.bar(location - width, ncbi_score, width, label="NCBI score")
-    bar2 = axes.bar(location, unite_score, width, label="UNITE score")
-    bar3 = axes.bar(location + width, total_score, width, label="Average score")
-    #plt.figure(figsize=(8,4))
-    #plt.bar(species_score_input["Species"], species_score_input["NCBI score"])
+    figure, axes1 = plt.subplots(figsize=(10,6))
+    bar1 = axes1.bar(location - width, ncbi_score, width, alpha=0.7, label="NCBI bit score")
+    bar2 = axes1.bar(location, unite_score, width, alpha=0.7, label="UNITE bit score")
+    bar3 = axes1.bar(location + width, total_score, width, alpha=0.7, label="Average bit score")
     
-    # Labeling
-    axes.set_xlabel("Species")
-    axes.set_ylabel("Score")
-    axes.set_title("Species score from each database", pad=35)
-    axes.set_xticks(location)
-    axes.set_xticklabels(species, rotation=30, ha="right")
-    axes.set_ylim(0.5,1)
-    # plt.xlabel("Species")
-    # plt.ylabel("Score (0-1)")
-    # plt.title("Species found from each database with scores")
-    axes.legend()
+    # Labeling for Bar graph
+    labels1 = [f"{score:.2f}" for score in ncbi_score]
+    axes1.bar_label(bar1, labels=labels1, padding=3, fontsize=8)
 
-    labels1 = [f"{score:.2f}\n({pct:.2f}%)"
-            for score, pct in zip(ncbi_score, ncbi_pct)]
-    axes.bar_label(bar1, labels=labels1, padding=3, fontsize=8)
-    # axes.bar_label(bar1, fmt="%.2f", fontsize=8)
-    labels2 = [f"{score:.2f}\n({pct:.2f}%)"
-            for score, pct in zip(unite_score, unite_pct)]
-    axes.bar_label(bar2, labels=labels2, padding=3, fontsize=8)
+    labels2 = [f"{score:.2f}" for score in unite_score]
+    axes1.bar_label(bar2, labels=labels2, padding=3, fontsize=8)
 
-    labels3 = [f"{score:.2f}\n({pct:.2f}%)"
-            for score, pct in zip(total_score, total_pct)]
-    axes.bar_label(bar3, labels=labels3, padding=3, fontsize=8)
+    labels3 = [f"{score:.2f}" for score in total_score]
+    axes1.bar_label(bar3, labels=labels3, padding=3, fontsize=8)
 
-    # axes.bar_label(bar2, fmt="%.2f", fontsize=8)
-    # axes.bar_label(bar3, fmt="%.2f", fontsize=8)
 
+    axes1.set_xlabel("Species")
+    axes1.set_ylabel("Score")
+    axes1.set_ylim(0.5,1)
+    axes1.set_xticks(location)
+    axes1.set_xticklabels(species, rotation=30, ha="right")
+    axes1.legend()
+
+    # Plot line graph
+    axes2 = axes1.twinx()
+
+    line1 = axes2.plot(location - width, ncbi_pct, color="black", linestyle="-", marker='o', linewidth=2, label="% NCBI hit coverage")
+    line2 = axes2.plot(location, unite_pct, color="black", linestyle="--", marker='s', linewidth=2, label="% Unite hit coverage")
+    line3 = axes2.plot(location + width, total_pct, color="black", linestyle=":", marker='^', linewidth=2, label="% Average hit coverage")
+
+    axes2.set_ylabel("Percentage (%)")
+    axes2.set_ylim(0, 100)
+
+    # Labeling for line graph
+    for x,y in zip(location - width, ncbi_pct):
+        axes2.text(x, y+2, f"{y:.1f}", ha="center", fontsize=8)
+    for x,y in zip(location, unite_pct):
+        axes2.text(x, y+2, f"{y:.1f}", ha="center", fontsize=8)
+    for x,y in zip(location + width, total_pct):
+        axes2.text(x, y+2, f"{y:.1f}", ha="center", fontsize=8)
+
+    # labels1 = [f"{score:.2f}\n({pct:.2f}%)"
+    #         for score, pct in zip(ncbi_score, ncbi_pct)]
+    # axes1.bar_label(bar1, labels=labels1, padding=3, fontsize=8)
+
+    # labels2 = [f"{score:.2f}\n({pct:.2f}%)"
+    #         for score, pct in zip(unite_score, unite_pct)]
+    # axes1.bar_label(bar2, labels=labels2, padding=3, fontsize=8)
+
+    # labels3 = [f"{score:.2f}\n({pct:.2f}%)"
+    #         for score, pct in zip(total_score, total_pct)]
+    # axes1.bar_label(bar3, labels=labels3, padding=3, fontsize=8)
+
+    # Combined
+    handles1, labelsax1 = axes1.get_legend_handles_labels()
+    handles2, labelsax2 = axes2.get_legend_handles_labels()
+
+    axes1.legend(handles1 + handles2, labelsax1 + labelsax2, loc="upper left")
+    axes1.set_title("Species score comparison with coverage %", pad=20)
     plt.tight_layout()
     plt.savefig(s_comparison_graph, dpi=300)
-    #plt.show()
     print("CL: End with plotting species score")
     
 if __name__ == "__main__" : sys.exit(main())

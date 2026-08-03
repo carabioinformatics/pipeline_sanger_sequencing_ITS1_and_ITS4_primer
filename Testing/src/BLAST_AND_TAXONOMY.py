@@ -284,7 +284,9 @@ def unite(s_input_file, s_blast_summary_unite, s_blast_complete_unite, s_taxonom
                             if (species != None):
                                 summary_out.write(f"Accession: {alignment.accession}\t\t")
                                 summary_out.write(f"Species: {species}\t\t")
-                                summary_out.write(f"E-value {hsp.expect}\n")
+                                summary_out.write(f"E-value: {hsp.expect:.10f}\t\t")
+                                summary_out.write(f"%Identity: {((hsp.identities/hsp.align_length)*100):.4f}\t\t")
+                                summary_out.write(f"%Coverage: {((hsp.align_length/record.query_length) * 100):.4f}\n")
                             # print("bit score: " + str(hsp.bits))
                             # print("identity: " + str((hsp.align_length/record.query_length) * 100))
                             # print("coverage: " + str((hsp.identities/hsp.align_length) * 100))

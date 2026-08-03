@@ -13,9 +13,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 Entrez.email = "26869993@sun.ac.za"
 
-############################ TODO ################################
-#TODO Check comparison method
-
 class Hit:
     def __init__(self, species, database_type, num_of_hits):
         self.species = species
@@ -64,7 +61,6 @@ class Hit:
         self.arr_coverage.append(temp_coverage)
     def add_identity(self, temp_identity):
         self.arr_identity.append(temp_identity)
-
 
 def main():
     """
@@ -616,7 +612,7 @@ def comparison_plotting(total_score_dict, s_comparison_graph):
     axes.set_title("Species score from each database", pad=35)
     axes.set_xticks(location)
     axes.set_xticklabels(species, rotation=30, ha="right")
-    axes.set_ylim(0,1)
+    axes.set_ylim(0.5,1)
     # plt.xlabel("Species")
     # plt.ylabel("Score (0-1)")
     # plt.title("Species found from each database with scores")

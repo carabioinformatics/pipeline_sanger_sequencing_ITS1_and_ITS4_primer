@@ -18,6 +18,29 @@ echo -e "Pipeline started" > "$pipeline_report"
 timing_report="./Output/INT26_TIME_REPORT.txt"
 echo -e "Sample name\tCleanup time (s)\tBLAST time (s)\tTotal time (s)" > "$timing_report"
 
+draw_progress() {
+    local current=$1
+    local total=$2
+
+    local width=40
+
+    local percent=$((100 * current / total))
+    local filled=$((width * current / total))
+    local empty=$((width - filled))
+
+    printf "\r["
+
+    printf "%0.s#" $(seq 1 $filled)
+    printf "%0.s-" $(seq 1 $empty)
+
+    printf "] %3d%% (%d/%d samples)\n" \
+     "$percent" "$current" "$total"
+}
+
+num_input_files=$(find ./Input -name "*.ab1" | wc -l)
+num_samples=$((num_input_files/2))
+current_sample_number=0
+
 for forward in ./Input/*ITS1___1.ab1
 do
     total_start_time=$(date +%s.%N)
@@ -138,6 +161,8 @@ do
     # Ending
     echo "$sample_name complete!"
     echo "================================================="
+    ((current_sample_number++))
+    draw_progress "$current_sample_number" "$num_samples"
 done
 
 echo -e "Pipeline ended" >> "$pipeline_report"
